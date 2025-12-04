@@ -1,0 +1,3 @@
+select mcp.ID1 as id_mvt, mcp.ID2 as id_prevision, mcp.DEVISE, mcp.TAUX, mcp.MONTANTCREDIT
+from MVTCAISSEPREVISION mcp
+where mcp.ID2 = 'MTC001511085946';

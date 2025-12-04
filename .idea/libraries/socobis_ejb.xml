@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="socobis-ejb">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/socobis-prod/socobis-prod/build-file/ear/socobis-ejb.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

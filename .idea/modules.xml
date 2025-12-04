@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea/socobis.iml" filepath="$PROJECT_DIR$/.idea/socobis.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-ejb/src/socobis-ejb.iml" filepath="$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-ejb/src/socobis-ejb.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-ejb/socobis-ejb2.iml" filepath="$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-ejb/socobis-ejb2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-prod.iml" filepath="$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-prod.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-war/src/java/socobis-war.iml" filepath="$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-war/src/java/socobis-war.iml" />
+      <module fileurl="file://$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-war/src/socobis-war2.iml" filepath="$PROJECT_DIR$/socobis-prod/socobis-prod/socobis-war/src/socobis-war2.iml" />
+    </modules>
+  </component>
+</project>

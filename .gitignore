@@ -1,0 +1,7 @@
+*.log
+*.tmp
+socobis-prod/socobis-prod/build-file/
+socobis-prod/socobis-prod/*.iml
+socobis-prod/socobis-prod/build.xml
+socobis-prod/socobis-prod/start-widfly.bat
+socobis-prod/socobis-prod/socobis-ejb/src/java/apj.properties
