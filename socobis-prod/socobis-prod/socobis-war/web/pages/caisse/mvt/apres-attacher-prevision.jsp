@@ -15,7 +15,7 @@
         PrevisionComplet prevision = new PrevisionComplet();
         System.out.println(id);
         prevision.setId(id);
-        String[] ids = request.getParameterValues("id");
+        String[] ids = request.getParameterValues("ids");
         prevision.attacherFacture(ids, u.getUser().getTuppleID(), null);
 %>
 <script language="JavaScript"> document.location.replace("<%=lien%>?but=prevision/prevision-fiche.jsp&valeur=&id=<%=id%>");</script>

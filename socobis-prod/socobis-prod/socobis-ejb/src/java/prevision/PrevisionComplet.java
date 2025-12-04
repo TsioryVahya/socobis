@@ -50,35 +50,40 @@ public class PrevisionComplet extends PrevisionCPL implements ClassIA {
     public PrevisionComplet(){
         this.setNomTable("PREVISION_COMPLET_CPL");
     }
-
     
-    public void attacherFacture(String[] ids, String u, Connection c)throws Exception{
-        boolean canClose=false;
-        try{
-            if(c==null){
-                c=new UtilDB().GetConn();
-                canClose=true;
+    @Override
+    public void attacherFacture(String[] ids, String u, Connection c) throws Exception {
+        boolean canClose = false;
+        try {
+            if (c == null) {
+                c = new UtilDB().GetConn();
+                canClose = true;
             }
-            if(this.getDaty() == null){
-                ((PrevisionComplet)this.getById(this.getId(), "PREVISION_COMPLET_CPL", c)).attacherFacture(ids,u,c);
+            if (this.getDaty() == null) {
+                ((PrevisionComplet) this.getById(this.getId(), "PREVISION_COMPLET_CPL", c))
+                        .attacherFacture(ids, u, c);
+                return;
             }
-        MvtCaisse[] mvtCaisses =  MvtCaisse.getAll(ids, c);
-        PrevisionComplet[] previsions = {this};
-        for (int i = 0; i < mvtCaisses.length; i++) {
-            MvtCaissePrevision[] mvts = mvtCaisses[0].attacherPrevision(previsions, u, c);
-            if(mvts.length >0){
-                mvts[0].createObject(u,c);
+
+            MvtCaisse[] mvtCaisses = MvtCaisse.getAll(ids, c);
+            PrevisionComplet[] previsions = { this };
+
+            for (int i = 0; i < mvtCaisses.length; i++) {
+                MvtCaissePrevision[] mvts = mvtCaisses[i].attacherPrevision(previsions, u, c);
+                if (mvts.length > 0) {
+                    mvts[0].createObject(u, c);
+                }
             }
-        }
-        }catch(Exception e){
+        } catch (Exception e) {
             throw e;
         } finally {
-            if(canClose){
+            if (canClose) {
                 c.close();
             }
-        }  
+        }
     }
-    
+
+
     public double getEcart() { 
         return this.isDepense() ? this.getDepenseEcart() : this.getRecetteEcart();
     }
