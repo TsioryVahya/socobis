@@ -486,7 +486,7 @@ public class FactureFournisseur extends vente.FactureCF{
                 Date sqlDate = Date.valueOf(localDate);
 
                 double montantPartAr = totalAr * (pct/100.0);
-                System.out.println("llllllllllllll")
+                System.out.println("llllllllllllll");
                 Prevision mere = new Prevision();
                 mere.setDaty(sqlDate);
                 mere.setDebit(montantPartAr);
@@ -496,7 +496,7 @@ public class FactureFournisseur extends vente.FactureCF{
                 mere.setIdDevise("AR");
                 mere.setIdTiers(this.getIdFournisseur());
                 mere.createObject(u, c);
-                System.out.println("mety pr eeeeee")
+                System.out.println("mety pr eeeeee");
 
             }
         } finally {
