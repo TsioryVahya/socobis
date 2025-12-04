@@ -459,8 +459,16 @@ public class FactureFournisseur extends vente.FactureCF{
 
     /**
      * Génère plusieurs prévisions à partir d'un plan de paiement.
-     * Format attendu: "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
-     * Exemple: 04/12/2025:30;15/12/2025:40;19/12/2025:30
+     *
+     * Formats acceptés pour "plan" (séparateur ";") :
+     *  - Ancien format (toujours supporté) :
+     *        "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
+     *    Exemple : 04/12/2025:30;15/12/2025:40;19/12/2025:30
+     *
+     *  - Nouveau format (sans pourcentage explicite) :
+     *        "dd/MM/yyyy;dd/MM/yyyy;..."
+     *    Dans ce cas, 100% est réparti automatiquement de façon égale
+     *    entre toutes les dates (2 dates => 50/50, 4 dates => 25% chacune, ...).
      */
     private void genererPrevisionsDepuisPlan(String u, Connection c, String plan) throws Exception{
         boolean canClose = false;
@@ -472,6 +480,73 @@ public class FactureFournisseur extends vente.FactureCF{
 
             String[] lignes = plan.split(";\\s*");
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+
+            // 1) Essayer d'abord l'ancien format avec pourcentages explicites
+            double sommePctExplicite = 0;
+            boolean auMoinsUnPctValide = false;
+            for (String ligne : lignes) {
+                if(ligne == null || ligne.trim().isEmpty()) continue;
+                String[] parts = ligne.split(":");
+                if(parts.length != 2) continue;
+                String pctStr = parts[1].trim();
+                if(pctStr.isEmpty()) continue;
+                double pct = 0;
+                try{ pct = Double.parseDouble(pctStr.replace(",", ".")); }catch(Exception ignore){ pct = 0; }
+                if(pct > 0){
+                    auMoinsUnPctValide = true;
+                    sommePctExplicite += pct;
+                }
+            }
+
+            // 2) Si aucun pourcentage explicite valide n'est trouvé, utiliser la nouvelle logique :
+            //    uniquement des dates => répartition égale de 100%.
+            if(!auMoinsUnPctValide){
+                int nbDates = 0;
+                for(String ligne : lignes){
+                    if(ligne == null || ligne.trim().isEmpty()) continue;
+                    String datyStr = ligne.trim();
+                    if(datyStr.isEmpty()) continue;
+                    nbDates++;
+                }
+                if(nbDates <= 0) return;
+
+                double pctParDate = 100.0 / nbDates;
+                double pctCumule = 0;
+                int indexDate = 0;
+
+                for(String ligne : lignes){
+                    if(ligne == null || ligne.trim().isEmpty()) continue;
+                    String datyStr = ligne.trim();
+                    if(datyStr.isEmpty()) continue;
+                    indexDate++;
+
+                    // Pour éviter les problèmes d'arrondi, on ajuste la dernière date
+                    double pct;
+                    if(indexDate == nbDates){
+                        pct = 100.0 - pctCumule;
+                    } else {
+                        pct = pctParDate;
+                        pctCumule += pctParDate;
+                    }
+
+                    LocalDate localDate = LocalDate.parse(datyStr, fmt);
+                    Date sqlDate = Date.valueOf(localDate);
+
+                    double montantPartAr = totalAr * (pct/100.0);
+                    Prevision mere = new Prevision();
+                    mere.setDaty(sqlDate);
+                    mere.setDebit(montantPartAr);
+                    mere.setIdFacture(this.id);
+                    mere.setIdCaisse(ConstanteStation.idCaisse);
+                    mere.setDesignation("Prevision plan FF "+this.getId()+" ("+pct+"%)");
+                    mere.setIdDevise("AR");
+                    mere.setIdTiers(this.getIdFournisseur());
+                    mere.createObject(u, c);
+                }
+                return;
+            }
+
+            // 3) Ancienne logique: utiliser les pourcentages fournis
             for(String ligne : lignes){
                 if(ligne == null || ligne.trim().isEmpty()) continue;
                 String[] parts = ligne.split(":");
@@ -486,7 +561,6 @@ public class FactureFournisseur extends vente.FactureCF{
                 Date sqlDate = Date.valueOf(localDate);
 
                 double montantPartAr = totalAr * (pct/100.0);
-                System.out.println("llllllllllllll");
                 Prevision mere = new Prevision();
                 mere.setDaty(sqlDate);
                 mere.setDebit(montantPartAr);
@@ -496,8 +570,6 @@ public class FactureFournisseur extends vente.FactureCF{
                 mere.setIdDevise("AR");
                 mere.setIdTiers(this.getIdFournisseur());
                 mere.createObject(u, c);
-                System.out.println("mety pr eeeeee");
-
             }
         } finally {
             if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
