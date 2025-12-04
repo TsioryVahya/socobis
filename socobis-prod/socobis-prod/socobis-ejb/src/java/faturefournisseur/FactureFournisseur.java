@@ -44,6 +44,8 @@ public class FactureFournisseur extends vente.FactureCF{
     protected double taux;
     protected String idDevise;
     protected String compte,compteauxiliaire;
+    // Plan de paiement au format "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
+    protected String planPaiement;
     int estPrevu;
      private double montantPerteGain;
 
@@ -225,6 +227,14 @@ public class FactureFournisseur extends vente.FactureCF{
 
     public void setMontantPerteGain(double montantPerteGain) {
         this.montantPerteGain = montantPerteGain;
+    }
+
+    public String getPlanPaiement() {
+        return planPaiement;
+    }
+
+    public void setPlanPaiement(String planPaiement) {
+        this.planPaiement = planPaiement;
     }
     
 
@@ -432,8 +442,15 @@ public class FactureFournisseur extends vente.FactureCF{
     public Object validerObject(String u, Connection c) throws Exception {
         super.validerObject(u, c);
         genererEcriture(u, c);
-        if(estPrevu == 0&&this.getDatyPrevu()!=null){
-            genererPrevision(u, c);
+        if(estPrevu == 0){
+            // S'il existe un plan de paiement, générer des prévisions multiples
+            String plan = this.getPlanPaiement();
+            if(plan != null && plan.trim().length() > 0){
+                genererPrevisionsDepuisPlan(u, c, plan);
+            } else if (this.getDatyPrevu()!=null){
+                // Sinon, comportement historique: une seule prévision à la date prévue
+                genererPrevision(u, c);
+            }
         }
         FactureFournisseurDetails[] ffD=(FactureFournisseurDetails[]) this.getFille(null,c,"");
         for(int i=0;i<ffD.length;i++){
@@ -441,6 +458,52 @@ public class FactureFournisseur extends vente.FactureCF{
         }
         return this;
     }  
+
+    /**
+     * Génère plusieurs prévisions à partir d'un plan de paiement.
+     * Format attendu: "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
+     * Exemple: 04/12/2025:30;15/12/2025:40;19/12/2025:30
+     */
+    private void genererPrevisionsDepuisPlan(String u, Connection c, String plan) throws Exception{
+        boolean canClose = false;
+        try{
+            if(c==null){ c = new UtilDB().GetConn(); canClose = true; }
+            // Montant total TTC en AR
+            FactureFournisseur factureWithMontant = getFactureWithMontant(c);
+            double totalAr = factureWithMontant.getMontantttcAr();
+            if(totalAr <= 0) return;
+
+            String[] lignes = plan.split(";\\s*");
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+            for(String ligne : lignes){
+                if(ligne == null || ligne.trim().isEmpty()) continue;
+                String[] parts = ligne.split(":");
+                if(parts.length != 2) continue;
+                String datyStr = parts[0].trim();
+                String pctStr = parts[1].trim();
+                if(datyStr.isEmpty() || pctStr.isEmpty()) continue;
+                double pct = 0;
+                try{ pct = Double.parseDouble(pctStr.replace(",", ".")); }catch(Exception ignore){ pct = 0; }
+                if(pct <= 0) continue;
+                LocalDate localDate = LocalDate.parse(datyStr, fmt);
+                Date sqlDate = Date.valueOf(localDate);
+
+                double montantPartAr = totalAr * (pct/100.0);
+                // Créer la prévision (dépense, devise AR)
+                Prevision mere = new Prevision();
+                mere.setDaty(sqlDate);
+                mere.setDebit(montantPartAr);
+                mere.setIdFacture(this.id);
+                mere.setIdCaisse(ConstanteStation.idCaisse);
+                mere.setDesignation("Prevision plan FF "+this.getId()+" ("+pct+"%)");
+                mere.setIdDevise("AR");
+                mere.setIdTiers(this.getIdFournisseur());
+                mere.createObject(u, c);
+            }
+        } finally {
+            if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
+        }
+    }
 
 
     public FactureFournisseurCpl getFactureFournisseurCpl(Connection c) throws Exception {

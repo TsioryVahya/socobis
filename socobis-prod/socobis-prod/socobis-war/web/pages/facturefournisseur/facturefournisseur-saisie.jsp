@@ -250,69 +250,38 @@
         }).format(val));
     }
     function deviseModification() {
-
         var nombreLigne = parseInt($("#nombreLigne").val());
-        for(let iL=0;iL<nombreLigne;iL++){
-            $(function(){
-                var mapping = {
-                    "AR": {
-                        "table": "ST_INGREDIENTSAUTOACHAT_CPL",
-                    },
-                    "USD": {
-                        "table": "ST_INGREDIENTSAUTOACHAT_USD"
-                    },
-                    "EUR": {
-                        "table": "ST_INGREDIENTSAUTOACHAT_EUR"
-                    }
-                };
-                $("#deviseLibelle").html($('#idDevise').val());
-                var idDevise = $('#idDevise').val();
-                $("#idDevise_"+iL).val(idDevise);
-                let autocompleteTriggered = false;
-                $("#idProduit_"+iL+"libelle").autocomplete('destroy');
-                $("#tauxDeChange_"+iL).val('');
-                $("#pu_"+iL).val('');
-                $("#idProduit_"+iL+"libelle").autocomplete({
-                    source: function(request, response) {
-                        $("#idProduit_"+iL).val('');
-                        if (autocompleteTriggered) {
-                            fetchAutocomplete(request, response, "null", "id", "null", mapping[idDevise].table, "produits.IngredientsLib", "true","pu;taux;compte;compte");
+        var idDevise = $('#idDevise').val();
+        var daty = $('input[name="daty"]').val() || '';
+        $("#deviseLibelle").html(idDevise);
+        // Récupérer le taux pour la devise sélectionnée
+        var url = '<%= request.getContextPath() %>/DeviseServlet?idDevise=' + encodeURIComponent(idDevise) + '&daty=' + encodeURIComponent(daty);
+        fetch(url, { credentials: 'same-origin' })
+            .then(function(r){ return r.json(); })
+            .then(function(data){
+                var newTaux = (data && typeof data.taux !== 'undefined') ? parseFloat(data.taux) : 1;
+                if (isNaN(newTaux) || newTaux<=0) newTaux = 1;
+                for(let iL=0;iL<nombreLigne;iL++){
+                    // Mettre à jour la devise de la ligne
+                    $("#idDevise_"+iL).val(idDevise);
+                    // Convertir le PU existant selon ancien et nouveau taux
+                    var puStr = $("#pu_"+iL).val();
+                    var oldTaux = parseFloat($("#tauxDeChange_"+iL).val());
+                    if (isNaN(oldTaux) || oldTaux<=0) oldTaux = 1;
+                    if (puStr && puStr.trim().length>0){
+                        var pu = parseFloat(puStr.replace(',', '.'));
+                        if(!isNaN(pu)){
+                            // Convertir PU courant -> AR, puis AR -> nouvelle devise
+                            var puAR = pu * oldTaux;
+                            var puNew = (idDevise === 'AR') ? puAR : (puAR / newTaux);
+                            $("#pu_"+iL).val(puNew.toFixed(2));
                         }
-                    },
-                    select: function(event, ui) {
-                        $("#idProduit_"+iL+"libelle").val(ui.item.label);
-                        $("#idProduit_"+iL).val(ui.item.value);
-                        $("#idProduit_"+iL).trigger('change');
-                        $(this).autocomplete('disable');
-                        var champsDependant = ['pu_'+iL,'tauxDeChange_'+iL,'compte_'+iL,'compte_'+iL+'libelle'];
-                        for(let i=0;i<champsDependant.length;i++){
-                            $('#'+champsDependant[i]).val(ui.item.retour.split(';')[i]);
-                        }
-                        autocompleteTriggered = false;
-                        return false;
                     }
-                }).autocomplete('disable');
-                $("#idProduit_"+iL+"libelle").off('keydown');
-                $("#idProduit_"+iL+"libelle").keydown(function(event) {
-                    if (event.key === 'Tab') {
-                        event.preventDefault();
-                        autocompleteTriggered = true;
-                        $(this).autocomplete('enable').autocomplete('search', $(this).val());
-                    }
-                });
-                $("#idProduit_"+iL+"libelle").off('input');
-                $("#idProduit_"+iL+"libelle").on('input', function() {
-                    $("#idProduit_"+iL).val('');
-                    autocompleteTriggered = false;
-                    $(this).autocomplete('disable');
-                });
-                $("#idProduit_"+iL+"searchBtn").off('click');
-                $("#idProduit_"+iL+"searchBtn").click(function() {
-                    autocompleteTriggered = true;
-                    $("#idProduit_"+iL+"libelle").autocomplete('enable').autocomplete('search', $("#idProduit_"+iL+"libelle").val());
-                });
-            });
-        }
+                    // Affecter le nouveau taux
+                    $("#tauxDeChange_"+iL).val(idDevise === 'AR' ? '1' : (''+newTaux));
+                }
+            })
+            .catch(function(err){ console.error('Erreur taux AJAX', err); });
     }
 </script>
 <%
