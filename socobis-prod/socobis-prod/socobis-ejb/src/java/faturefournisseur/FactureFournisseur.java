@@ -448,7 +448,6 @@ public class FactureFournisseur extends vente.FactureCF{
             if(plan != null && plan.trim().length() > 0){
                 genererPrevisionsDepuisPlan(u, c, plan);
             } else if (this.getDatyPrevu()!=null){
-                // Sinon, comportement historique: une seule prévision à la date prévue
                 genererPrevision(u, c);
             }
         }
