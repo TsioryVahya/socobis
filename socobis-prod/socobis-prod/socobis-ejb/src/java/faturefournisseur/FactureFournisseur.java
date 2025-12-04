@@ -443,12 +443,10 @@ public class FactureFournisseur extends vente.FactureCF{
         super.validerObject(u, c);
         genererEcriture(u, c);
         if(estPrevu == 0){
-            // S'il existe un plan de paiement, générer des prévisions multiples
             String plan = this.getPlanPaiement();
             if(plan != null && plan.trim().length() > 0){
                 genererPrevisionsDepuisPlan(u, c, plan);
             } else if (this.getDatyPrevu()!=null){
-                // Sinon, comportement historique: une seule prévision à la date prévue
                 genererPrevision(u, c);
             }
         }
@@ -468,7 +466,6 @@ public class FactureFournisseur extends vente.FactureCF{
         boolean canClose = false;
         try{
             if(c==null){ c = new UtilDB().GetConn(); canClose = true; }
-            // Montant total TTC en AR
             FactureFournisseur factureWithMontant = getFactureWithMontant(c);
             double totalAr = factureWithMontant.getMontantttcAr();
             if(totalAr <= 0) return;
@@ -489,7 +486,7 @@ public class FactureFournisseur extends vente.FactureCF{
                 Date sqlDate = Date.valueOf(localDate);
 
                 double montantPartAr = totalAr * (pct/100.0);
-                // Créer la prévision (dépense, devise AR)
+                System.out.println("llllllllllllll")
                 Prevision mere = new Prevision();
                 mere.setDaty(sqlDate);
                 mere.setDebit(montantPartAr);
@@ -499,6 +496,8 @@ public class FactureFournisseur extends vente.FactureCF{
                 mere.setIdDevise("AR");
                 mere.setIdTiers(this.getIdFournisseur());
                 mere.createObject(u, c);
+                System.out.println("mety pr eeeeee")
+
             }
         } finally {
             if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
