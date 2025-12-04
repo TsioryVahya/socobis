@@ -443,7 +443,6 @@ public class FactureFournisseur extends vente.FactureCF{
         super.validerObject(u, c);
         genererEcriture(u, c);
         if(estPrevu == 0){
-            // S'il existe un plan de paiement, générer des prévisions multiples
             String plan = this.getPlanPaiement();
             if(plan != null && plan.trim().length() > 0){
                 genererPrevisionsDepuisPlan(u, c, plan);
