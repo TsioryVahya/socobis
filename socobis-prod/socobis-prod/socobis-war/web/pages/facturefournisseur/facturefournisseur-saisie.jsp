@@ -235,53 +235,64 @@
 </div>
 <script>
     function calculerMontant(indice,source) {
-        var val = 0;
+        // 1) Calculer le total en AR en convertissant chaque ligne: qte * pu * tauxDeChange_i
+        var totalAR = 0;
         $('input[id^="qte_"]').each(function() {
-            var quantite =  parseFloat($("#"+$(this).attr('id').replace("qte","pu")).val());
-            var montant = parseFloat($(this).val());
-            if(!isNaN(quantite) && !isNaN(montant)){
-                var value =quantite * montant;
-                val += value;
-            }
+            var idQte = $(this).attr('id');
+            var idPu = idQte.replace('qte','pu');
+            var idTx = idQte.replace('qte','tauxDeChange');
+            var qte = parseFloat($(this).val());
+            var pu = parseFloat($("#"+idPu).val());
+            var tx = parseFloat($("#"+idTx).val());
+            if (isNaN(qte)) qte = 0;
+            if (isNaN(pu)) pu = 0;
+            if (isNaN(tx) || tx<=0) tx = 1;
+            totalAR += (qte * pu * tx);
         });
+        // 2) Convertir l'affichage dans la devise en-tête sélectionnée
+        var headerDev = $('#idDevise').val();
+        var daty = $('input[name="daty"]').val() || '';
+        if (headerDev === 'AR') {
+            updateTotalDisplay(totalAR, 'Ar');
+        } else {
+            var url = '<%= request.getContextPath() %>/DeviseServlet?idDevise=' + encodeURIComponent(headerDev) + '&daty=' + encodeURIComponent(daty);
+            fetch(url, { credentials: 'same-origin' })
+                .then(function(r){ return r.json(); })
+                .then(function(data){
+                    var headerTaux = (data && typeof data.taux !== 'undefined') ? parseFloat(data.taux) : 1;
+                    if (isNaN(headerTaux) || headerTaux<=0) headerTaux = 1;
+                    var totalHeader = totalAR / headerTaux;
+                    updateTotalDisplay(totalHeader, headerDev);
+                })
+                .catch(function(){ updateTotalDisplay(totalAR, headerDev); });
+        }
+    }
+
+    function updateTotalDisplay(val, devLabel){
         $("#montanttotal").html(Intl.NumberFormat('fr-FR', {
             minimumFractionDigits: 2,
             maximumFractionDigits: 2
         }).format(val));
+        $("#deviseLibelle").html(devLabel);
     }
     function deviseModification() {
-        var nombreLigne = parseInt($("#nombreLigne").val());
-        var idDevise = $('#idDevise').val();
+        // Propager la devise et le taux d'entête aux lignes, sans toucher aux PU
+        var headerDev = $('#idDevise').val();
         var daty = $('input[name="daty"]').val() || '';
-        $("#deviseLibelle").html(idDevise);
-        // Récupérer le taux pour la devise sélectionnée
-        var url = '<%= request.getContextPath() %>/DeviseServlet?idDevise=' + encodeURIComponent(idDevise) + '&daty=' + encodeURIComponent(daty);
+        var nombreLigne = parseInt($("#nombreLigne").val());
+        var url = '<%= request.getContextPath() %>/DeviseServlet?idDevise=' + encodeURIComponent(headerDev) + '&daty=' + encodeURIComponent(daty);
         fetch(url, { credentials: 'same-origin' })
             .then(function(r){ return r.json(); })
             .then(function(data){
-                var newTaux = (data && typeof data.taux !== 'undefined') ? parseFloat(data.taux) : 1;
-                if (isNaN(newTaux) || newTaux<=0) newTaux = 1;
+                var headerTaux = (data && typeof data.taux !== 'undefined') ? parseFloat(data.taux) : 1;
+                if (isNaN(headerTaux) || headerTaux<=0) headerTaux = 1;
                 for(let iL=0;iL<nombreLigne;iL++){
-                    // Mettre à jour la devise de la ligne
-                    $("#idDevise_"+iL).val(idDevise);
-                    // Convertir le PU existant selon ancien et nouveau taux
-                    var puStr = $("#pu_"+iL).val();
-                    var oldTaux = parseFloat($("#tauxDeChange_"+iL).val());
-                    if (isNaN(oldTaux) || oldTaux<=0) oldTaux = 1;
-                    if (puStr && puStr.trim().length>0){
-                        var pu = parseFloat(puStr.replace(',', '.'));
-                        if(!isNaN(pu)){
-                            // Convertir PU courant -> AR, puis AR -> nouvelle devise
-                            var puAR = pu * oldTaux;
-                            var puNew = (idDevise === 'AR') ? puAR : (puAR / newTaux);
-                            $("#pu_"+iL).val(puNew.toFixed(2));
-                        }
-                    }
-                    // Affecter le nouveau taux
-                    $("#tauxDeChange_"+iL).val(idDevise === 'AR' ? '1' : (''+newTaux));
+                    $("#idDevise_"+iL).val(headerDev);
+                    $("#tauxDeChange_"+iL).val(headerDev === 'AR' ? '1' : (''+headerTaux));
                 }
+                calculerMontant();
             })
-            .catch(function(err){ console.error('Erreur taux AJAX', err); });
+            .catch(function(){ calculerMontant(); });
     }
 </script>
 <%
