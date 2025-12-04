@@ -41,3 +41,4 @@ select
   f.tauxdechange,
   f.idprevision
 from FACTUREFOURNISSEURCPL f;
+commit;

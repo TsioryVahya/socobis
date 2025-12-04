@@ -6,6 +6,6 @@ CREATE USER socobisprod IDENTIFIED BY socobisprod;
 GRANT CONNECT, RESOURCE TO socobisprod;
 GRANT DBA TO socobisprod;
 
-imp socobisprod/socobisprod@ORCL file=G:\ITU\S5\PROG\socobis\socobis\socobis\socobis\socobis_20251107\socobis_20251107.dmp full=y ignore=y;
+imp socobisprod/socobisprod@ORCL file=D:\ITU\S5\M.Tahina\socobis\socobis\socobis\socobis_20251107\socobis_20251107.dmp full=y ignore=y;
 
 sqlplus socobisprod/socobisprod@ORCL
