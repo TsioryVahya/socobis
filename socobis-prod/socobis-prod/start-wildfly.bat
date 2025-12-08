@@ -5,7 +5,7 @@ echo ========================================
 echo.
 
 REM Configuration WildFly
-set WILDFLY_HOME=D:\ZAVATRA_INSTALENA\wildfly-10.0.0.Final
+set WILDFLY_HOME=G:\ZAVATRA_INSTALENA\wildfly-10.0.0.Final\wildfly-10.0.0.Final
 set WILDFLY_BIN=%WILDFLY_HOME%\bin
 set WILDFLY_STANDALONE=%WILDFLY_BIN%\standalone.bat
 
