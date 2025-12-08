@@ -16,6 +16,8 @@ import java.sql.Connection;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 import chatbot.FilleOcr;
 import chatbot.MereOcr;
@@ -458,11 +460,10 @@ public class FactureFournisseur extends vente.FactureCF{
     }  
 
     /**
-     * Génère des prévisions à partir d'un plan de paiement.
-     * Nouveau format attendu: "dd/MM/yyyy;dd/MM/yyyy;..." (une ou plusieurs dates)
-     * Règles:
-     *  - 1 date  => une seule prévision du montant total TTC AR
-     *  - N dates => N prévisions en parts égales (dernière ligne prend le reliquat)
+     * Génère plusieurs prévisions à partir d'un plan de paiement.
+     * Nouveaux formats supportés:
+     *  - Sans pourcentage: "dd/MM/yyyy;dd/MM/yyyy;..." (répartition égale)
+     *  - Ancien (toujours supporté): "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
      */
     private void genererPrevisionsDepuisPlan(String u, Connection c, String plan) throws Exception{
         boolean canClose = false;
@@ -475,36 +476,72 @@ public class FactureFournisseur extends vente.FactureCF{
 
             String[] lignes = plan.split(";\\s*");
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
-            // Filtrer les dates valides
-            java.util.List<String> dates = new java.util.ArrayList<>();
-            for(String token : lignes){
-                if(token != null && token.trim().length() > 0){
-                    dates.add(token.trim());
+
+            boolean contientPourcentage = plan.contains(":");
+
+            if(contientPourcentage){
+                // Compatibilité ancienne: dd/MM/yyyy:pourcentage
+                for(String ligne : lignes){
+                    if(ligne == null || ligne.trim().isEmpty()) continue;
+                    String[] parts = ligne.split(":");
+                    if(parts.length != 2) continue;
+                    String datyStr = parts[0].trim();
+                    String pctStr = parts[1].trim();
+                    if(datyStr.isEmpty() || pctStr.isEmpty()) continue;
+                    double pct = 0;
+                    try{ pct = Double.parseDouble(pctStr.replace(",", ".")); }catch(Exception ignore){ pct = 0; }
+                    if(pct <= 0) continue;
+                    LocalDate localDate = LocalDate.parse(datyStr, fmt);
+                    Date sqlDate = Date.valueOf(localDate);
+
+                    double montantPartAr = totalAr * (pct/100.0);
+                    Prevision mere = new Prevision();
+                    mere.setDaty(sqlDate);
+                    mere.setDebit(montantPartAr);
+                    mere.setIdFacture(this.id);
+                    mere.setIdCaisse(ConstanteStation.idCaisse);
+                    // Ancien format: conserve l'affichage du pourcentage
+                    mere.setDesignation("Prevision plan FF "+this.getId()+" ("+pct+"%)");
+                    mere.setIdDevise("AR");
+                    mere.setIdTiers(this.getIdFournisseur());
+                    mere.createObject(u, c);
                 }
-            }
-            if(dates.isEmpty()) return;
+            } else {
+                // Nouveau format: juste une liste de dates, montant réparti équitablement
+                List<LocalDate> dates = new ArrayList<>();
+                for(String ligne : lignes){
+                    if(ligne == null) continue;
+                    String datyStr = ligne.trim();
+                    if(datyStr.isEmpty()) continue;
+                    LocalDate localDate = LocalDate.parse(datyStr, fmt);
+                    dates.add(localDate);
+                }
+                int n = dates.size();
+                if(n == 0) return;
 
-            int n = dates.size();
-            double part = totalAr / n;
-            double sommeGeneree = 0.0;
-            for(int i=0; i<n; i++){
-                String datyStr = dates.get(i);
-                LocalDate localDate = LocalDate.parse(datyStr, fmt);
-                Date sqlDate = Date.valueOf(localDate);
+                double partBrute = totalAr / n;
+                double partArrondie = Math.round(partBrute * 100.0) / 100.0;
+                double sommeCree = 0.0;
 
-                double montantPartAr = (i < n-1) ? part : (totalAr - sommeGeneree);
-                sommeGeneree += montantPartAr;
+                for(int i = 0; i < n; i++){
+                    LocalDate ld = dates.get(i);
+                    Date sqlDate = Date.valueOf(ld);
+                    double montantPartAr = (i < n - 1)
+                            ? partArrondie
+                            : Math.round((totalAr - sommeCree) * 100.0) / 100.0; // Ajuste la dernière part pour corriger l'arrondi
+                    sommeCree += montantPartAr;
 
-                // Créer la prévision (dépense, devise AR)
-                Prevision mere = new Prevision();
-                mere.setDaty(sqlDate);
-                mere.setDebit(montantPartAr);
-                mere.setIdFacture(this.id);
-                mere.setIdCaisse(ConstanteStation.idCaisse);
-                mere.setDesignation("Prevision plan FF "+this.getId());
-                mere.setIdDevise("AR");
-                mere.setIdTiers(this.getIdFournisseur());
-                mere.createObject(u, c);
+                    Prevision mere = new Prevision();
+                    mere.setDaty(sqlDate);
+                    mere.setDebit(montantPartAr);
+                    mere.setIdFacture(this.id);
+                    mere.setIdCaisse(ConstanteStation.idCaisse);
+                    // Pas de pourcentage dans la désignation pour le nouveau format
+                    mere.setDesignation("Prevision plan FF "+this.getId());
+                    mere.setIdDevise("AR");
+                    mere.setIdTiers(this.getIdFournisseur());
+                    mere.createObject(u, c);
+                }
             }
         } finally {
             if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
