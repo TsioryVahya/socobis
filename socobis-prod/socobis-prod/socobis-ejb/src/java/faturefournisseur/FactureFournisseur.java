@@ -465,14 +465,13 @@ public class FactureFournisseur extends vente.FactureCF{
      *  - Sans pourcentage: "dd/MM/yyyy;dd/MM/yyyy;..." (répartition égale)
      *  - Ancien (toujours supporté): "dd/MM/yyyy:pourcentage;dd/MM/yyyy:pourcentage;..."
      */
-    private void genererPrevisionsDepuisPlan(String u, Connection c, String plan) throws Exception{
-        boolean canClose = false;
-        try{
-            if(c==null){ c = new UtilDB().GetConn(); canClose = true; }
-            // Montant total TTC en AR
-            FactureFournisseur factureWithMontant = getFactureWithMontant(c);
-            double totalAr = factureWithMontant.getMontantttcAr();
-            if(totalAr <= 0) return;
+private void genererPrevisionsDepuisPlan(String u, Connection c, String plan) throws Exception{
+    boolean canClose = false;
+    try{
+        if(c==null){ c = new UtilDB().GetConn(); canClose = true; }
+        FactureFournisseur factureWithMontant = getFactureWithMontant(c);
+        double totalAr = factureWithMontant.getMontantttcAr();
+        if(totalAr <= 0) return;
 
             String[] lignes = plan.split(";\\s*");
             DateTimeFormatter fmt = DateTimeFormatter.ofPattern("dd/MM/yyyy");
@@ -543,12 +542,56 @@ public class FactureFournisseur extends vente.FactureCF{
                     mere.createObject(u, c);
                 }
             }
-        } finally {
-            if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
+            nbDates++;
         }
+        
+        // Calculer le pourcentage par défaut si pas de pourcentages fournis
+        double pctParDefaut = nbDates > 0 ? (100.0 / nbDates) : 0;
+        
+        for(String ligne : lignes){ 
+            if(ligne == null || ligne.trim().isEmpty()) continue;
+            String[] parts = ligne.split(":");
+            
+            String datyStr = parts[0].trim();
+            if(datyStr.isEmpty()) continue;
+            
+            double pct = 0;
+            
+            // Si on a un pourcentage après le ":"
+            if(parts.length == 2 && !parts[1].trim().isEmpty()){
+                String pctStr = parts[1].trim();
+                try{ 
+                    pct = Double.parseDouble(pctStr.replace(",", ".")); 
+                }catch(Exception ignore){ 
+                    pct = 0; 
+                }
+            } else {
+                // Pas de pourcentage fourni, utiliser la répartition égale
+                pct = pctParDefaut;
+            }
+            
+            if(pct <= 0) continue;
+            
+            LocalDate localDate = LocalDate.parse(datyStr, fmt);
+            Date sqlDate = Date.valueOf(localDate);
+
+            double montantPartAr = totalAr * (pct/100.0);
+            System.out.println("llllllllllllll");
+            Prevision mere = new Prevision();
+            mere.setDaty(sqlDate);
+            mere.setDebit(montantPartAr);
+            mere.setIdFacture(this.id);
+            mere.setIdCaisse(ConstanteStation.idCaisse);
+            mere.setDesignation("Prevision plan FF "+this.getId()+" ("+String.format("%.2f", pct)+"%)");
+            mere.setIdDevise("AR");
+            mere.setIdTiers(this.getIdFournisseur());
+            mere.createObject(u, c);
+            System.out.println("mety pr eeeeee");
+        }
+    } finally {
+        if(canClose && c!=null) try{ c.close(); }catch(Exception ignore){}
     }
-
-
+}
     public FactureFournisseurCpl getFactureFournisseurCpl(Connection c) throws Exception {
         if (c == null) {
             throw new Exception("Connection non etablie");

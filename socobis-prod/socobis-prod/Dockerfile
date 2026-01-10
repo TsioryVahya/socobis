@@ -1,32 +1,32 @@
-# Utiliser une image Alpine Linux comme base
-FROM alpine:latest
+###############################
+# Stage 1 — Build with Ant
+###############################
+FROM frekele/ant:1.10-jdk8 AS builder
 
-# Installer OpenJDK 8 et autres dépendances
-RUN apk update && apk add --no-cache \
-    openjdk8-jre \
-    wget \
-    unzip
+# Set the working directory where build.xml is located
+WORKDIR /app
 
-# Définir JAVA_HOME pour OpenJDK 8
-ENV JAVA_HOME /usr/lib/jvm/java-1.8-openjdk
-ENV PATH $JAVA_HOME/bin:$PATH
+# Copy the entire project (so relative paths work correctly)
+COPY . /app
 
-# Télécharger et installer WildFly
-RUN wget https://download.jboss.org/wildfly/10.1.0.Final/wildfly-10.1.0.Final.zip \
-    && unzip wildfly-10.1.0.Final.zip -d /opt/ \
-    && mv /opt/wildfly-10.1.0.Final /opt/wildfly \
-    && rm wildfly-10.1.0.Final.zip
+# Run Ant build (deploy target builds & copies exploded war)
+RUN ant -f build.xml deploy
 
-# Définir WILDFLY_HOME
-ENV WILDFLY_HOME /opt/wildfly
 
-# Copier votre application WAR dans le dossier de déploiement de WildFly
-COPY ./deployments/socobis.war $WILDFLY_HOME/standalone/deployments/socobis.war
+###############################
+# Stage 2 — WildFly with built WAR
+###############################
+FROM jboss/wildfly:10.1.0.Final
 
-RUN touch $WILDFLY_HOME/standalone/deployments/socobis.war.dodeploy
+# WildFly deployments directory
+ENV DEPLOY_DIR=/opt/jboss/wildfly/standalone/deployments
 
-# Exposer les ports nécessaires
+# Copy the exploded WAR from builder stage into WildFly deploy folder
+COPY --from=builder /opt/wildfly/standalone/deployments/socobis.war ${DEPLOY_DIR}/socobis.war
+
+# Create marker so WildFly deploys at startup
+RUN touch ${DEPLOY_DIR}/socobis.war.dodeploy
+
 EXPOSE 8080 9990
 
-# Démarrer WildFly
-CMD ["/opt/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
+CMD ["/opt/jboss/wildfly/bin/standalone.sh", "-b", "0.0.0.0"]
