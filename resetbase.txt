@@ -1,15 +1,13 @@
--- redemarena le oracle 
-docker restart oracle_11g
-
--- esorina le dmp taloha tao amle container
-docker exec -u 0 oracle_11g rm -f /tmp/socobis.dmp
-
---copiena le dmp vaovao
-REM Utiliser le dmp fourni dans le dossier racine du workspace (socobis_20251107)
-docker cp "socobis_20251107\socobis_20251107.dmp" oracle_11g:/tmp/socobis.dmp
-
---importena le dmp
-docker exec -it oracle_11g bash -c "imp system/oracle@XE file=/tmp/socobis.dmp full=y ignore=y"
+docker exec -it oracle-db bash
+sqlplus sys as sysdba
+CREATE USER socobis IDENTIFIED BY socobis;
+GRANT CONNECT, RESOURCE TO socobis;
+GRANT DBA TO socobis;
+ALTER USER socobis DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS;
+SELECT username FROM dba_users WHERE username='SOCOBIS';
 
 
-ela be pr io sady misy erreur pr le dmp 
+
+quitena pr l izy d alefa ndray ty
+docker cp "E:\socobis\socobis_20251107\socobis_20251107.dmp" oracle-db:/tmp/socobis_20251107.dmp
+docker exec -it oracle-db bash -c "imp system/oracle file=/tmp/socobis_20251107.dmp fromuser=SOCOBIS touser=SOCOBIS ignore=y"

@@ -1,6 +1,4 @@
--- Exemple de refonte: FACTUREFOURNISSEURCPL_TOUS
--- 1) Drop et recréez la vue en incluant la somme des paiements
---    (vérifiez les colonnes exactes de votre vue actuelle)
+
 CREATE OR REPLACE VIEW FACTUREFOURNISSEURCPL_TOUS AS
 select
   f.id,

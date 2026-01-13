@@ -21,7 +21,15 @@
         MapUtilisateur map = ue.getUser();
         String awhere = " and receiver='" + receiver + "' ";
         String home_page=ue.getHome_page();
-        MapUtilisateur[] u2 = (MapUtilisateur[]) (CGenUtil.rechercher(new MapUtilisateur(), null, null, ""));
+        MapUtilisateur[] u2 = new MapUtilisateur[0];
+        utilitaire.UtilDB utilDB = new utilitaire.UtilDB();
+        java.sql.Connection conn = null;
+        try {
+            conn = utilDB.GetConn();
+            u2 = (MapUtilisateur[]) (CGenUtil.rechercher(new MapUtilisateur(), null, null, conn, ""));
+        } finally {
+            if (conn != null) conn.close();
+        }
 %>
 <script>
     document.addEventListener('DOMContentLoaded', function () {

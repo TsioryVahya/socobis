@@ -45,6 +45,15 @@ public class Fabrication extends Of {
     String fabricationSuiv;
     String equipe;
     double nbPetris;
+    String ordreDeFab;
+
+    public String getOrdreDeFab() {
+        return ordreDeFab;
+    }
+
+    public void setOrdreDeFab(String ordreDeFab) {
+        this.ordreDeFab = ordreDeFab;
+    }
 
     public double getNbPetris() {
         return nbPetris;
@@ -107,6 +116,14 @@ public class Fabrication extends Of {
     }
 
     public void setIdOf(String idOf) {
+        this.idOf = idOf;
+    }
+
+    public String getIdof() {
+        return idOf;
+    }
+
+    public void setIdof(String idOf) {
         this.idOf = idOf;
     }
 

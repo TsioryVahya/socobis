@@ -125,11 +125,11 @@ public class Compteur extends ClassEtat {
             Compteur cmp = new Compteur();
             cmp.setNomTable("COMPTEUR");
             cmp.setIdMachine(idMachine);
-            Compteur[] list = (Compteur[]) CGenUtil.rechercher(cmp, null, null,c, " AND ETAT >= 11 ORDER BY ID, DATY ASC");
+            Compteur[] list = (Compteur[]) CGenUtil.rechercher(cmp, null, null,c, " AND ETAT >= 11 ORDER BY DATY DESC, ID DESC");
             if(list != null && list.length > 0) {
                 rep = (Compteur) list[0];
             }else{
-                return this;
+                return null;
             }
             return rep;
         } catch (Exception e) {
@@ -393,7 +393,7 @@ public class Compteur extends ClassEtat {
         Compteur compteurLast= this.getCompteurLast(c, this.getIdMachine());
         if(compteurLast != null){
             if(this.getNombre() <= compteurLast.getNombre()){
-                throw new Exception("La valeur du compteur doit etre superieur à celle du dernier compteur : " + compteurLast.getNombre());
+                throw new Exception("La valeur du compteur ("+this.getNombre()+") doit etre superieur à celle du dernier compteur : " + compteurLast.getNombre());
             }
         }
     }

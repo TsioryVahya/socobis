@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="DataSourcePerFileMappings">
+    <file url="file://$PROJECT_DIR$/plan.sql" value="05bb1866-3af2-46ed-a48a-3401feb7fb07" />
+    <file url="file://$PROJECT_DIR$/socobis-prod/socobis-prod/script.sql" value="05bb1866-3af2-46ed-a48a-3401feb7fb07" />
+    <file url="file://$PROJECT_DIR$/socobis-prod/socobis-prod/sujet2.sql" value="05bb1866-3af2-46ed-a48a-3401feb7fb07" />
+  </component>
+</project>

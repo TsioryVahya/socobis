@@ -13,7 +13,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import com.google.gson.Gson;
+import bean.CGenUtil;
 import compteur.Compteur;
+import compteur.CompteurLib;
 import user.UserEJB;
 import utilitaire.UtilDB;
 import utilitaire.Utilitaire;
@@ -39,44 +41,118 @@ public class CompteurServlet extends HttpServlet {
                 throw new Exception("Session expirée ou utilisateur non connecté");
             }
 
-            // Extraction des paramètres
-            String datyStr = request.getParameter("daty");
-            String idMachine = request.getParameter("idMachine");
-            String nombreStr = request.getParameter("nombre");
-            String heure = request.getParameter("heure");
-            String idFabrication = request.getParameter("idFabrication");
-            String idOrigine = request.getParameter("idOrigine");
+            // Gestion du JSON ou des paramètres classiques
+            String action = request.getParameter("action");
+            Map<String, Object> jsonData = null;
 
-            // Création de l'objet Compteur
-            Compteur compteur = new Compteur();
-            
-            if (datyStr != null && !datyStr.isEmpty()) {
-                compteur.setDaty(Utilitaire.stringDate(datyStr));
-            } else {
-                compteur.setDaty(Utilitaire.dateDuJourSql());
+            String contentType = request.getContentType();
+            if (contentType != null && contentType.contains("application/json")) {
+                jsonData = gson.fromJson(request.getReader(), Map.class);
+            } else if (request.getMethod().equalsIgnoreCase("POST")) {
+                // Tentative de lecture JSON même si le Content-Type est absent ou incorrect
+                try {
+                    jsonData = gson.fromJson(request.getReader(), Map.class);
+                } catch (Exception e) {
+                    // Pas du JSON, on ignore
+                }
             }
 
-            compteur.setIdMachine(idMachine);
-            compteur.setHeure(heure);
-            compteur.setIdFabrication(idFabrication);
-            compteur.setIdOrigine(idOrigine);
-            
-            if (nombreStr != null && !nombreStr.isEmpty()) {
-                compteur.setNombre(Double.parseDouble(nombreStr));
+            if (jsonData != null && action == null) {
+                action = (String) jsonData.get("action");
             }
 
-            // Persistance
+            if (action == null) action = "create"; // Par défaut create pour faciliter les tests POST
+
             c = new UtilDB().GetConn();
-            c.setAutoCommit(false);
-            
-            // On utilise la fonction existante de création d'objet du framework
-            compteur.createObject(String.valueOf(u.getUser().getRefuser()), c);
-            
-            c.commit();
 
-            res.put("status", "success");
-            res.put("message", "Compteur enregistré avec succès");
-            res.put("data", compteur);
+            if (action.equalsIgnoreCase("list")) {
+                CompteurLib critere = new CompteurLib();
+                String idMachine = request.getParameter("idMachine");
+                if (jsonData != null && jsonData.get("idMachine") != null) idMachine = (String) jsonData.get("idMachine");
+                
+                String where = "";
+                if (idMachine != null && !idMachine.isEmpty()) {
+                    where = " AND IDMACHINE = '" + idMachine + "'";
+                }
+                
+                Object[] list = u.getData(critere, null, null, c, where);
+                res.put("status", "success");
+                res.put("data", list);
+            } 
+            else if (action.equalsIgnoreCase("create")) {
+                Compteur compteur = new Compteur();
+                
+                if (jsonData != null) {
+                    System.out.println("DEBUG: JSON data received: " + jsonData);
+                    // Extraction manuelle pour éviter les problèmes de type avec Gson
+                    compteur.setIdMachine((String) jsonData.get("idMachine"));
+                    compteur.setHeure((String) jsonData.get("heure"));
+                    compteur.setIdFabrication((String) jsonData.get("idFabrication"));
+                    compteur.setIdOrigine((String) jsonData.get("idOrigine"));
+                    
+                    Object nombreObj = jsonData.get("nombre");
+                    if (nombreObj != null) {
+                        if (nombreObj instanceof Number) {
+                            compteur.setNombre(((Number) nombreObj).doubleValue());
+                        } else {
+                            compteur.setNombre(Double.parseDouble(nombreObj.toString()));
+                        }
+                    }
+                    
+                    if (jsonData.get("daty") != null) {
+                        String datyStr = jsonData.get("daty").toString();
+                        if (datyStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                            compteur.setDaty(java.sql.Date.valueOf(datyStr));
+                        } else {
+                            compteur.setDaty(Utilitaire.stringDate(datyStr));
+                        }
+                    } else {
+                        compteur.setDaty(Utilitaire.dateDuJourSql());
+                    }
+                } else {
+                    System.out.println("DEBUG: Classic parameters received");
+                    // Extraction depuis les paramètres classiques (form-url-encoded)
+                    compteur.setIdMachine(request.getParameter("idMachine"));
+                    compteur.setHeure(request.getParameter("heure"));
+                    compteur.setIdFabrication(request.getParameter("idFabrication"));
+                    compteur.setIdOrigine(request.getParameter("idOrigine"));
+                    
+                    String nombreStr = request.getParameter("nombre");
+                    if (nombreStr != null && !nombreStr.isEmpty()) {
+                        compteur.setNombre(Double.parseDouble(nombreStr));
+                    }
+                    
+                    String datyStr = request.getParameter("daty");
+                    if (datyStr != null && !datyStr.isEmpty()) {
+                        if (datyStr.matches("\\d{4}-\\d{2}-\\d{2}")) {
+                            compteur.setDaty(java.sql.Date.valueOf(datyStr));
+                        } else {
+                            compteur.setDaty(Utilitaire.stringDate(datyStr));
+                        }
+                    } else {
+                        compteur.setDaty(Utilitaire.dateDuJourSql());
+                    }
+                }
+
+                System.out.println("DEBUG: Compteur to create: Machine=" + compteur.getIdMachine() + ", Nombre=" + compteur.getNombre() + ", Daty=" + compteur.getDaty());
+
+                // Persistance
+                c.setAutoCommit(false);
+                compteur.createObject(String.valueOf(u.getUser().getRefuser()), c);
+                c.commit();
+
+                Map<String, Object> simpleData = new HashMap<>();
+                simpleData.put("id", compteur.getId());
+                simpleData.put("idMachine", compteur.getIdMachine());
+                simpleData.put("nombre", compteur.getNombre());
+                simpleData.put("daty", compteur.getDaty());
+
+                res.put("status", "success");
+                res.put("message", "Compteur enregistré avec succès");
+                res.put("data", simpleData);
+            } else {
+                throw new Exception("Action non reconnue : " + action);
+            }
 
         } catch (Exception e) {
             if (c != null) {
