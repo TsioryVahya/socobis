@@ -8,8 +8,8 @@ const loading = ref(false)
 const error = ref<string | null>(null)
 
 const form = ref({
-  identifiant: '',
-  passe: '',
+  identifiant: 'admin',
+  passe: 'test',
   interim: '0',
   service: ''
 })
@@ -62,7 +62,15 @@ const handleLogin = async () => {
               Identifiant
             </label>
             <div class="mt-1">
-              <input v-model="form.identifiant" id="identifiant" name="identifiant" type="text" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <input
+                v-model="form.identifiant"
+                id="identifiant"
+                name="identifiant"
+                type="text"
+                required
+                readonly
+                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 cursor-not-allowed sm:text-sm"
+              >
             </div>
           </div>
 
@@ -71,21 +79,15 @@ const handleLogin = async () => {
               Mot de passe
             </label>
             <div class="mt-1">
-              <input v-model="form.passe" id="passe" name="passe" type="password" required class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-            </div>
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label for="interim" class="block text-sm font-medium text-gray-700">Interim</label>
-              <select v-model="form.interim" id="interim" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md">
-                <option value="0">Non</option>
-                <option value="1">Oui</option>
-              </select>
-            </div>
-            <div>
-              <label for="service" class="block text-sm font-medium text-gray-700">Service</label>
-              <input v-model="form.service" id="service" type="text" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+              <input
+                v-model="form.passe"
+                id="passe"
+                name="passe"
+                type="password"
+                required
+                readonly
+                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 cursor-not-allowed sm:text-sm"
+              >
             </div>
           </div>
 
