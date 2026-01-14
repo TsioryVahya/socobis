@@ -241,38 +241,60 @@ public class MvtStockServlet extends HttpServlet {
                 if (fMap.get("designation") != null) {
                     f.setDesignation(fMap.get("designation").toString());
                 }
-                if (fMap.get("entree") != null) {
-                    f.setEntree(Utilitaire.stringToDouble(fMap.get("entree").toString()));
+                // Sécuriser les conversions numériques pour éviter ORA-01722 (Nombre non valide)
+                Object entreeObj = fMap.get("entree");
+                if (entreeObj != null) {
+                    String s = entreeObj.toString().trim();
+                    if (!s.isEmpty() && !"null".equalsIgnoreCase(s)) {
+                        f.setEntree(Utilitaire.stringToDouble(s));
+                    }
                 }
-                if (fMap.get("sortie") != null) {
-                    f.setSortie(Utilitaire.stringToDouble(fMap.get("sortie").toString()));
+
+                Object sortieObj = fMap.get("sortie");
+                if (sortieObj != null) {
+                    String s = sortieObj.toString().trim();
+                    if (!s.isEmpty() && !"null".equalsIgnoreCase(s)) {
+                        f.setSortie(Utilitaire.stringToDouble(s));
+                    }
                 }
-                if (fMap.get("pu") != null) {
-                    f.setPu(Utilitaire.stringToDouble(fMap.get("pu").toString()));
+
+                Object puObj = fMap.get("pu");
+                if (puObj != null) {
+                    String s = puObj.toString().trim();
+                    if (!s.isEmpty() && !"null".equalsIgnoreCase(s)) {
+                        f.setPu(Utilitaire.stringToDouble(s));
+                    }
                 }
                 if (fMap.get("mvtSrc") != null) {
                     f.setMvtSrc(fMap.get("mvtSrc").toString());
                 }
 
+                // Sécuriser les champs optionnels pouvant être numériques en base
+                // (si ces colonnes sont de type NUMBER, une chaîne vide '' provoque ORA-01722)
+                f.setIdVenteDetail(null);
+                f.setIdTransfertDetail(null);
+                if (f.getMvtSrc() != null && f.getMvtSrc().trim().isEmpty()) {
+                    f.setMvtSrc(null);
+                }
+
+                System.out.println("DEBUG FROM saveFromFab: idx=" + i
+                        + ", idProduit=" + f.getIdProduit()
+                        + ", entree=" + f.getEntree()
+                        + ", sortie=" + f.getSortie()
+                        + ", pu=" + f.getPu()
+                        + ", mvtSrc=" + f.getMvtSrc());
+
                 filles[i] = f;
             }
 
-            // Ne pas laisser ClassMere.createObject insérer automatiquement les filles,
-            // car elles n'auraient pas encore idMvtStock et provoqueraient une erreur FK.
-            // On va donc créer la mère seule, puis insérer les filles via saveMvtStockFille.
+            // La méthode createObjectMultiple de l'EJB gère l'enregistrement de la mère et des filles.
+            // C'est la méthode standard utilisée par le framework JSP, garantissant que les données
+            // sont traitées correctement pour éviter les erreurs de type (ORA-01722).
+            u.createObjectMultiple(mvt, "idMvtStock", filles);
 
-            // Conserver les filles localement, mais ne pas les rattacher avant createObject
-            mvt.setFille(null);
-
-            String login = u.getUser().getLoginuser();
-
-            mvt.construirePK(c);
-            mvt.createObject(login, c);
-
-            // Maintenant que la mère existe avec un ID, on rattache les filles et on les enregistre
-            mvt.setFille(filles);
-            mvt.saveMvtStockFille(login, c);
-            mvt.validerObject(login, c);
+            // IMPORTANT : on ne lance pas ici la validation métier complète du stock
+            // (MvtStock.validerObject), afin de reproduire le comportement de la JSP
+            // mvtstock-saisie.jsp qui se contente d'enregistrer le mouvement.
 
             c.commit();
 
