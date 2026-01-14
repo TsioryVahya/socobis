@@ -124,9 +124,11 @@ const handleSave = async () => {
     }
 
     if (data.status === 'success') {
-      saveMessage.value = 'Mouvement de stock enregistré avec succès.'
-      // Optionnel : recharger depuis le backend pour refléter tout recalcul serveur
-      await fetchMvt()
+      saveMessage.value = data.message || 'Mouvement de stock enregistré avec succès.'
+      // Rediriger l'utilisateur vers la page précédente après un court délai pour qu'il voie le message
+      setTimeout(() => {
+        router.back()
+      }, 2000)
     } else {
       error.value = data.message || 'Erreur lors de l\'enregistrement du mouvement de stock'
     }

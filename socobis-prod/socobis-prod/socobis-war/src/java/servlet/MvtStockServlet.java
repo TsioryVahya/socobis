@@ -110,8 +110,15 @@ public class MvtStockServlet extends HttpServlet {
         Date daty = mvt.getDaty() != null ? mvt.getDaty() : Utilitaire.dateDuJourSql();
         mere.put("daty", daty.toString());
 
-        MvtStockFille[] filles = (MvtStockFille[]) mvt.getFille();
-        if (filles == null) {
+        bean.ClassFille[] fillesGeneriques = mvt.getFille();
+        MvtStockFille[] filles;
+
+        if (fillesGeneriques != null) {
+            filles = new MvtStockFille[fillesGeneriques.length];
+            for (int i = 0; i < fillesGeneriques.length; i++) {
+                filles[i] = (MvtStockFille) fillesGeneriques[i];
+            }
+        } else {
             filles = new MvtStockFille[0];
         }
         Object[] fillesJson = new Object[filles.length];
