@@ -26,6 +26,8 @@ public class OfFilleServlet extends HttpServlet {
             c = new UtilDB().GetConn();
 
             OfFilleCpl of = new OfFilleCpl();
+            // Utiliser la même vue que le JSP (OFFILLELIB) pour l'autocomplétion
+            of.setNomTable("OFFILLELIB");
             OfFilleCpl[] results = (OfFilleCpl[]) CGenUtil.rechercher(of, null, null, c, "");
 
             List<Map<String, Object>> data = new ArrayList<>();

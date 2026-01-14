@@ -134,12 +134,12 @@ onMounted(async () => {
       <div class="col-md-3"></div>
       <div class="col-md-6">
         <div class="box box-fiche shadow-sm border border-gray-200 rounded-md bg-white">
-          <div class="box-body px-4 py-4 space-y-4">
-            <p class="text-sm text-gray-600 mb-2">
-              Lancer un nouvel ordre de fabrication (OF).
-            </p>
+          <form @submit.prevent="submitForm">
+            <div class="box-body px-4 py-4 space-y-4">
+              <p class="text-sm text-gray-600 mb-2">
+                Lancer un nouvel ordre de fabrication (OF).
+              </p>
 
-            <form @submit.prevent="submitForm">
               <div v-if="error" class="bg-red-50 p-4 rounded-md">
                 <p class="text-sm text-red-700">{{ error }}</p>
               </div>
@@ -360,24 +360,24 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
-            </form>
-          </div>
-          <div class="box-footer px-4 py-3 bg-gray-50 text-right space-x-3">
-            <button
-              type="button"
-              @click="router.back()"
-              class="btn btn-secondary inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-              Annuler
-            </button>
-            <button
-              type="submit"
-              :disabled="loading"
-              class="btn btn-primary inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-            >
-              {{ loading ? 'Lancement...' : 'Lancer la fabrication' }}
-            </button>
-          </div>
+            </div>
+            <div class="box-footer px-4 py-3 bg-gray-50 text-right space-x-3">
+              <button
+                type="button"
+                @click="router.back()"
+                class="btn btn-secondary inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+              >
+                Annuler
+              </button>
+              <button
+                type="submit"
+                :disabled="loading"
+                class="btn btn-primary inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+              >
+                {{ loading ? 'Lancement...' : 'Lancer la fabrication' }}
+              </button>
+            </div>
+          </form>
         </div>
       </div>
     </div>

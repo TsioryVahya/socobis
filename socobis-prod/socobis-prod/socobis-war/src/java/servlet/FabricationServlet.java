@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.HashMap;
+import java.util.ArrayList;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -14,8 +16,11 @@ import javax.servlet.http.HttpSession;
 
 import com.google.gson.Gson;
 import bean.ClassMAPTable;
+import bean.CGenUtil;
 import fabrication.Fabrication;
+import fabrication.FabricationCpl;
 import fabrication.FabricationFille;
+import fabrication.FabricationFilleCpl;
 import user.UserEJB;
 import utilitaire.Utilitaire;
 
@@ -37,6 +42,7 @@ public class FabricationServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
         Map<String, Object> res = new HashMap<>();
+        boolean responseWritten = false;
 
         try {
             String action = request.getParameter("action");
@@ -52,18 +58,46 @@ public class FabricationServlet extends HttpServlet {
             Fabrication mere = null;
             FabricationFille[] filles = null;
 
-            // Mode LISTE
-            // Mode LISTE avec pagination
+            // Mode LISTE (utilise les vues FABRICATIONCPL* comme la JSP)
             if ("list".equalsIgnoreCase(action)) {
                 System.out.println("FabricationServlet: Mode LISTE détecté");
-                Fabrication critere = new Fabrication();
-                String idFabrication = request.getParameter("id");
+
+                FabricationCpl critere = new FabricationCpl();
+
+                // Nom de table dynamique comme dans fabrication-liste.jsp
+                String etatTable = request.getParameter("etatTable");
+                if (etatTable == null || etatTable.trim().isEmpty()) {
+                    etatTable = "FABRICATIONCPL"; // Tous par défaut
+                }
+                critere.setNomTable(etatTable);
+
+                String id = request.getParameter("id");
+                String lancePar = request.getParameter("lancePar");
+                String cible = request.getParameter("cible");
+                String remarque = request.getParameter("remarque");
+                String libelle = request.getParameter("libelle");
+                String datyMin = request.getParameter("datyMin");
+                String datyMax = request.getParameter("datyMax");
+                String idOf = request.getParameter("idOf");
+                String idOffille = request.getParameter("idOffille");
 
                 String where = "";
-                if (idFabrication != null && !idFabrication.isEmpty()) {
-                    where = " AND id = '" + idFabrication + "'";
+                if (id != null && !id.isEmpty()) where += " AND id LIKE '%" + id + "%'";
+                if (lancePar != null && !lancePar.isEmpty()) where += " AND lanceparLib LIKE '%" + lancePar + "%'";
+                if (cible != null && !cible.isEmpty()) where += " AND cibleLib LIKE '%" + cible + "%'";
+                if (remarque != null && !remarque.isEmpty()) where += " AND remarque LIKE '%" + remarque + "%'";
+                if (libelle != null && !libelle.isEmpty()) where += " AND libelle LIKE '%" + libelle + "%'";
+                if (idOf != null && !idOf.isEmpty()) where += " AND idOf LIKE '%" + idOf + "%'";
+                if (idOffille != null && !idOffille.isEmpty()) where += " AND idOffille LIKE '%" + idOffille + "%'";
+
+                if (datyMin != null && !datyMin.isEmpty()) {
+                    where += " AND daty >= TO_DATE('" + datyMin + "', 'YYYY-MM-DD')";
                 }
-                // Ajouter un ORDER BY compatible Oracle (sans LIMIT/OFFSET)
+                if (datyMax != null && !datyMax.isEmpty()) {
+                    where += " AND daty <= TO_DATE('" + datyMax + "', 'YYYY-MM-DD')";
+                }
+
+                // Même tri que la JSP : par date puis id
                 where += " ORDER BY daty DESC, id DESC";
 
                 utilitaire.UtilDB utilDB = new utilitaire.UtilDB();
@@ -71,11 +105,8 @@ public class FabricationServlet extends HttpServlet {
                 try {
                     conn = utilDB.GetConn();
 
-                    // Compter le total pour la pagination
-                    String countQuery = "SELECT COUNT(*) FROM FABRICATION WHERE 1=1" +
-                            (idFabrication != null && !idFabrication.isEmpty()
-                                    ? " AND id = '" + idFabrication + "'"
-                                    : "");
+                    // Compter le total sur la même vue
+                    String countQuery = "SELECT COUNT(*) FROM " + etatTable + " WHERE 1=1" + where.replace(" ORDER BY daty DESC, id DESC", "");
                     java.sql.Statement stmt = conn.createStatement();
                     java.sql.ResultSet rs = stmt.executeQuery(countQuery);
                     int total = 0;
@@ -85,18 +116,119 @@ public class FabricationServlet extends HttpServlet {
                     rs.close();
                     stmt.close();
 
-                    // Récupérer les données (sans pagination Oracle pour l'instant)
+                    // Récupérer les données
                     Object[] list = u.getData(critere, null, null, conn, where);
 
                     System.out.println("FabricationServlet: Recherche terminée, nb resultats = " +
                             (list != null ? list.length : 0));
 
+                    // Pour éviter les problèmes de sérialisation Gson avec FabricationCpl
+                    // (champs dupliqués comme etatLib), on construit une représentation simple
+                    java.util.List<Map<String, Object>> data = new java.util.ArrayList<>();
+                    if (list != null) {
+                        for (Object obj : list) {
+                            if (obj instanceof FabricationCpl) {
+                                FabricationCpl f = (FabricationCpl) obj;
+                                Map<String, Object> row = new HashMap<>();
+                                row.put("id", f.getId());
+                                row.put("lancePar", f.getLanceparLib());
+                                row.put("cible", f.getCibleLib());
+                                row.put("remarque", f.getRemarque());
+                                row.put("libelle", f.getLibelle());
+                                row.put("daty", f.getDaty());
+                                row.put("idOf", f.getIdOf());
+                                row.put("idOffille", f.getIdOffille());
+                                row.put("etatLib", f.getEtatLib());
+                                row.put("etat", f.getEtat());
+                                data.add(row);
+                            }
+                        }
+                    }
+
                     res.put("status", "success");
-                    res.put("data", list);
+                    res.put("data", data);
+                    res.put("total", total);
                 } finally {
                     if (conn != null)
                         conn.close();
                 }
+                responseWritten = true;
+                out.print(gson.toJson(res));
+                return;
+            }
+
+            // Mode VALIDER: valider une fabrication (même comportement que le bouton "Valider" de la JSP via apresTarif.jsp)
+            if ("valider".equalsIgnoreCase(action)) {
+                String idFab = request.getParameter("id");
+                if (idFab == null || idFab.trim().isEmpty()) {
+                    throw new Exception("Paramètre id (fabrication) manquant pour l'action valider");
+                }
+
+                // Reproduire le chemin ERP: passer par UserEJB.validerObject
+                Fabrication fab = new Fabrication();
+                fab.setId(idFab);
+                fab.setNomTable("fabrication");
+
+                // Utiliser le framework EJB pour la validation (comme dans apresTarif.jsp)
+                u.validerObject(fab);
+
+                res.put("status", "success");
+                res.put("message", "Fabrication validée");
+                responseWritten = true;
+                out.print(gson.toJson(res));
+                return;
+            }
+
+            // Mode DETAILS: renvoyer les lignes de fabrication (FabricationFilleCpl) pour une fabrication donnée
+            if ("details".equalsIgnoreCase(action)) {
+                String idFab = request.getParameter("id");
+                if (idFab == null || idFab.trim().isEmpty()) {
+                    throw new Exception("Paramètre id (fabrication) manquant pour l'action details");
+                }
+
+                utilitaire.UtilDB utilDB = new utilitaire.UtilDB();
+                java.sql.Connection conn = null;
+                try {
+                    conn = utilDB.GetConn();
+
+                    FabricationFilleCpl map = new FabricationFilleCpl();
+                    // Utiliser exactement le même nom de table que dans fabrication-details.jsp
+                    map.setNomTable("FabricationFilleCpl");
+                    map.setIdMere(idFab);
+
+                    // Même logique que PageRecherche: filtre explicite sur idMere
+                    Object[] list = CGenUtil.rechercher(map, null, null, conn,
+                            " and idMere='" + idFab + "'");
+
+                    // Construire une représentation JSON simplifiée pour éviter les champs complexes (RecetteLib, etc.)
+                    java.util.List<Map<String, Object>> data = new ArrayList<>();
+                    if (list != null) {
+                        for (Object obj : list) {
+                            if (obj instanceof FabricationFilleCpl) {
+                                FabricationFilleCpl ff = (FabricationFilleCpl) obj;
+                                Map<String, Object> row = new HashMap<>();
+                                row.put("id", ff.getId());
+                                row.put("idIngredients", ff.getIdIngredients());
+                                row.put("idingredientsLib", ff.getIdingredientsLib());
+                                row.put("libelle", ff.getLibelle());
+                                row.put("datybesoin", ff.getDatyBesoin());
+                                row.put("pu", ff.getPu());
+                                row.put("qte", ff.getQte());
+                                row.put("montant", ff.getMontant());
+                                row.put("idunitelib", ff.getIdunitelib());
+                                row.put("idMachineLib", ff.getIdMachineLib());
+                                data.add(row);
+                            }
+                        }
+                    }
+
+                    res.put("status", "success");
+                    res.put("data", data);
+                } finally {
+                    if (conn != null)
+                        conn.close();
+                }
+                responseWritten = true;
                 out.print(gson.toJson(res));
                 return;
             }
@@ -146,6 +278,7 @@ public class FabricationServlet extends HttpServlet {
                         if (mereMap.get("idBc") != null) mere.setIdBc(mereMap.get("idBc").toString());
                         if (mereMap.get("idBonDeCommande") != null) mere.setIdBc(mereMap.get("idBonDeCommande").toString());
                         if (mereMap.get("ordreDeFab") != null) mere.setOrdreDeFab(mereMap.get("ordreDeFab").toString());
+                        if (mereMap.get("equipe") != null) mere.setEquipe(mereMap.get("equipe").toString());
 
                         // Gestion des filles
                         java.util.List<Map<String, Object>> fillesList = (java.util.List<Map<String, Object>>) data.get("filles");
@@ -159,6 +292,8 @@ public class FabricationServlet extends HttpServlet {
                                 if (fMap.get("idMachine") != null) filles[i].setIdMachine(fMap.get("idMachine").toString());
                                 if (fMap.get("idunite") != null) filles[i].setIdunite(fMap.get("idunite").toString());
                                 if (fMap.get("libelle") != null) filles[i].setLibelle(fMap.get("libelle").toString());
+                                if (fMap.get("remarque") != null) filles[i].setRemarque(fMap.get("remarque").toString());
+                                if (fMap.get("idBcFille") != null) filles[i].setIdBcFille(fMap.get("idBcFille").toString());
                             }
                         }
                     }
@@ -248,7 +383,9 @@ public class FabricationServlet extends HttpServlet {
             }
         } finally {
             try {
-                out.print(gson.toJson(res));
+                if (!responseWritten) {
+                    out.print(gson.toJson(res));
+                }
             } catch (Exception fatal) {
                 // En cas d'erreur ultime de sérialisation
                 out.print("{\"status\":\"error\",\"message\":\"Erreur fatale de sérialisation JSON\"}");
