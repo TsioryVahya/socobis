@@ -233,6 +233,46 @@ public class FabricationServlet extends HttpServlet {
                 return;
             }
 
+            // Mode MOUVEMENTS: renvoyer les mouvements de stock (MvtStockCpl) pour une fabrication donnée
+            if ("mouvements".equalsIgnoreCase(action)) {
+                String idFab = request.getParameter("id");
+                if (idFab == null || idFab.trim().isEmpty()) {
+                    throw new Exception("Paramètre id (fabrication) manquant pour l'action mouvements");
+                }
+
+                utilitaire.UtilDB utilDB = new utilitaire.UtilDB();
+                java.sql.Connection conn = null;
+                try {
+                    conn = utilDB.GetConn();
+                    stock.MvtStockCpl[] mouvements = stock.MvtStockCpl.getMouvementsForFabrication(idFab, conn);
+                    
+                    java.util.List<Map<String, Object>> data = new ArrayList<>();
+                    if (mouvements != null) {
+                        for (stock.MvtStockCpl mvt : mouvements) {
+                            Map<String, Object> row = new HashMap<>();
+                            row.put("id", mvt.getId());
+                            row.put("daty", mvt.getDaty() != null ? mvt.getDaty().toString() : null);
+                            row.put("designation", mvt.getDesignation());
+                            row.put("typeMouvement", mvt.getLibelleTypeMvtStock());
+                            row.put("magasin", mvt.getLibelleMagasin());
+                            row.put("vente", mvt.getIdVente());
+                            row.put("montant", mvt.getMontant());
+                            row.put("etat", mvt.getEtat()); // Envoyer l'état brut, le frontend se chargera de l'affichage
+                            data.add(row);
+                        }
+                    }
+
+                    res.put("status", "success");
+                    res.put("data", data);
+                } finally {
+                    if (conn != null)
+                        conn.close();
+                }
+                responseWritten = true;
+                out.print(gson.toJson(res));
+                return;
+            }
+
             // Tentative de lecture du JSON uniquement si le Content-Type est
             // application/json
             String contentType = request.getContentType();

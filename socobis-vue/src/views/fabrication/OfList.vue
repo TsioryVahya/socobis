@@ -45,8 +45,7 @@ const fetchOfs = async (params?: any) => {
   try {
     const response = await axios.get('/OfServlet?action=list', { params })
     if (response.data.status === 'success') {
-      displayedOfs.value = response.data.data
-      // Par défaut, on affiche tous les OF sans appliquer les filtres
+      ofs.value = response.data.data || []
       displayedOfs.value = ofs.value
     } else {
       error.value = response.data.message

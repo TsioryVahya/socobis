@@ -55,7 +55,7 @@ public class OfServlet extends HttpServlet {
 
                 Connection c = new UtilDB().GetConn();
                 try {
-                    Object[] list = u.getData(critere, listeCrt, listeInt, c, "");
+                    Object[] list = u.getData(critere, request, listeCrt, listeInt, c, "");
                     res.put("status", "success");
                     res.put("count", list != null ? list.length : 0);
                     res.put("data", list);

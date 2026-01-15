@@ -1750,6 +1750,38 @@ public class UserEJBBean implements UserEJB {
         return CGenUtil.rechercher(e, colInt, valInt, c, apresWhere);
     }
 
+    @Override
+    public Object[] getData(ClassMAPTable e, HttpServletRequest req, String[] listeCrt, String[] listeInt, Connection c, String apresWhere) throws Exception {
+        java.util.Vector<String> vVal = new java.util.Vector<String>();
+        java.util.Vector<String> vCol = new java.util.Vector<String>();
+        int i = 0;
+        String val = "";
+        while (i < listeCrt.length) {
+            val = req.getParameter(listeCrt[i]);
+            if (val != null && !val.equals("")) {
+                vVal.add(val);
+                vCol.add(listeCrt[i]);
+            }
+            i++;
+        }
+        i = 0;
+        while (i < listeInt.length) {
+            String val1 = req.getParameter(listeInt[i] + "1");
+            String val2 = req.getParameter(listeInt[i] + "2");
+            if ((val1 != null && !val1.equals("")) || (val2 != null && !val2.equals(""))) {
+                vVal.add(val1);
+                vVal.add(val2);
+                vCol.add(listeInt[i]);
+            }
+            i++;
+        }
+        String[] valInt = new String[vVal.size()];
+        String[] colInt = new String[vCol.size()];
+        vVal.copyInto(valInt);
+        vCol.copyInto(colInt);
+        return getData(e, colInt, valInt, c, apresWhere);
+    }
+
     /**
      * Créer un objet avec trace de la personne modifiant
      *

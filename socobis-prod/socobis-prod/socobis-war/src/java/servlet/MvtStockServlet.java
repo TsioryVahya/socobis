@@ -53,6 +53,10 @@ public class MvtStockServlet extends HttpServlet {
                 handlePrepareFromFab(request, res);
             } else if ("saveFromFab".equalsIgnoreCase(action)) {
                 handleSaveFromFab(request, u, res);
+            } else if ("getDetail".equalsIgnoreCase(action)) {
+                handleGetDetail(request, res);
+            } else if ("viserMouvement".equalsIgnoreCase(action)) {
+                handleViserMouvement(request, u, res);
             } else {
                 throw new Exception("Action inconnue pour MvtStockServlet : " + action);
             }
@@ -324,5 +328,84 @@ public class MvtStockServlet extends HttpServlet {
                 }
             }
         }
+    }
+
+    private void handleGetDetail(HttpServletRequest request, Map<String, Object> res) throws Exception {
+        String idMvt = request.getParameter("id");
+        if (idMvt == null || idMvt.trim().isEmpty()) {
+            throw new Exception("Paramètre id (mouvement) manquant pour l'action getDetail");
+        }
+
+        Connection c = null;
+        try {
+            UtilDB utilDB = new UtilDB();
+            c = utilDB.GetConn();
+
+            stock.MvtStockCpl mvtCpl = stock.MvtStockCpl.getSingleMouvement(idMvt, c);
+
+            if (mvtCpl == null) {
+                res.put("status", "error");
+                res.put("message", "Mouvement de stock non trouvé pour l'ID: " + idMvt);
+                return;
+            }
+
+            // Sérialisation manuelle pour un contrôle total du JSON
+            Map<String, Object> data = new HashMap<>();
+            data.put("id", mvtCpl.getId());
+            data.put("designation", mvtCpl.getDesignation());
+            data.put("idobjet", mvtCpl.getIdobjet());
+            data.put("idMagasin", mvtCpl.getIdMagasin());
+            data.put("libelleMagasin", mvtCpl.getLibelleMagasin());
+            data.put("idVente", mvtCpl.getIdVente());
+            data.put("idTransfert", mvtCpl.getIdTransfert());
+            data.put("idTypeMvStock", mvtCpl.getIdTypeMvStock());
+            data.put("libelleTypeMvtStock", mvtCpl.getLibelleTypeMvtStock());
+            data.put("daty", mvtCpl.getDaty() != null ? mvtCpl.getDaty().toString() : null);
+            data.put("etat", mvtCpl.getEtat());
+            data.put("montant", mvtCpl.getMontant());
+
+            List<Map<String, Object>> fillesJson = new java.util.ArrayList<>();
+            if (mvtCpl.getFille() != null) {
+                for (bean.ClassFille fille : mvtCpl.getFille()) {
+                    if (fille instanceof MvtStockFille) {
+                        MvtStockFille f = (MvtStockFille) fille;
+                        Map<String, Object> fMap = new HashMap<>();
+                        fMap.put("id", f.getId());
+                        fMap.put("idProduit", f.getIdProduit());
+                        fMap.put("designation", f.getDesignation());
+                        fMap.put("entree", f.getEntree());
+                        fMap.put("sortie", f.getSortie());
+                        fMap.put("pu", f.getPu());
+                        fMap.put("mvtSrc", f.getMvtSrc());
+                        fillesJson.add(fMap);
+                    }
+                }
+            }
+            data.put("filles", fillesJson);
+
+            res.put("status", "success");
+            res.put("data", data);
+
+        } finally {
+            if (c != null) {
+                c.close();
+            }
+        }
+    }
+
+    private void handleViserMouvement(HttpServletRequest request, UserEJB u, Map<String, Object> res) throws Exception {
+        String idMvt = request.getParameter("id");
+        if (idMvt == null || idMvt.trim().isEmpty()) {
+            throw new Exception("Paramètre id (mouvement) manquant pour l'action viserMouvement");
+        }
+
+        MvtStock mvt = new MvtStock();
+        mvt.setId(idMvt);
+
+        // Utiliser le framework EJB pour la validation, comme pour la fabrication
+        u.validerObject(mvt);
+
+        res.put("status", "success");
+        res.put("message", "Mouvement de stock visé avec succès");
     }
 }
