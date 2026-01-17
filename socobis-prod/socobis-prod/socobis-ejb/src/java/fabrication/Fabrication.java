@@ -1014,7 +1014,7 @@ public class Fabrication extends Of {
     }
     @Override
     public ClassMAPTable createObject(MapUtilisateur u, Connection c)throws Exception{
-        if((u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0)){
+        if(u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0 && u.getIdrole().compareTo("cheffab") != 0){
             throw new Exception("Vous n’avez pas le droit de creer une fabrication");
         }
         return super.createObject(u,c);
