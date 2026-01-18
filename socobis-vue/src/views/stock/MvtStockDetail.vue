@@ -103,96 +103,169 @@ onMounted(fetchMouvementDetail);
 </script>
 
 <template>
-  <div class="content-wrapper py-4 px-2 sm:px-4">
-    <h1 class="box-title text-xl font-semibold mb-4 flex items-center gap-2">
-      <button type="button" @click="router.back()" class="text-gray-500 hover:text-gray-700">
-        &#8592;
-      </button>
-      <span>Fiche du mouvement de stock</span>
-    </h1>
-
-    <div v-if="loading" class="text-center py-10 text-gray-500">Chargement...</div>
-    <div v-else-if="error" class="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-      {{ error }}
+  <div class="min-h-screen bg-slate-50/50 pb-12">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-10 backdrop-blur-md bg-white/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-4">
+            <button 
+              @click="router.back()" 
+              class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-900">Fiche du mouvement de stock</h1>
+          </div>
+          
+          <div v-if="mouvement" class="flex items-center gap-3">
+            <span :class="{
+              'px-3 py-1 text-xs font-bold rounded-full border': true,
+              'bg-blue-50 text-blue-700 border-blue-100': mouvement.etat == 1,
+              'bg-emerald-50 text-emerald-700 border-emerald-100': mouvement.etat >= 10,
+              'bg-slate-50 text-slate-600 border-slate-200': mouvement.etat < 1 && mouvement.etat != null
+            }">
+              {{ getStatusLabel(mouvement.etat) }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
-    <div v-else-if="mouvement" class="max-w-3xl mx-auto bg-white p-4 sm:p-6 rounded-md shadow">
-        <!-- Détails de l'en-tête -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4 mb-6 text-sm">
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">ID</div>
-                <div class="mt-1 font-medium text-gray-900">{{ mouvement.id }}</div>
+
+    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <p class="mt-4 text-slate-500 font-medium">Chargement des données...</p>
+      </div>
+
+      <div v-else-if="error" class="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3 text-red-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <p class="font-medium">{{ error }}</p>
+      </div>
+
+      <div v-else-if="mouvement" class="space-y-6">
+        <!-- Informations Générales -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md">
+          <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Informations du Mouvement</h2>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+              <div class="space-y-4">
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Référence</p>
+                  <p class="text-base font-bold text-indigo-600">#{{ mouvement.id }}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Date</p>
+                  <p class="text-base font-medium text-slate-900">{{ formatDate(mouvement.daty) }}</p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Désignation</p>
+                  <p class="text-base font-medium text-slate-900">{{ mouvement.designation }}</p>
+                </div>
+              </div>
+              <div class="space-y-4">
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Magasin</p>
+                  <p class="text-base font-medium text-slate-900 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                    </svg>
+                    {{ mouvement.libelleMagasin }}
+                  </p>
+                </div>
+                <div class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Type de Mouvement</p>
+                  <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700 border border-slate-200">
+                    {{ mouvement.libelleTypeMvtStock }}
+                  </span>
+                </div>
+                <div v-if="mouvement.idobjet" class="space-y-1">
+                  <p class="text-xs font-semibold text-slate-500 uppercase">Fabrication Associée</p>
+                  <router-link :to="{ name: 'FabricationDetail', params: { id: mouvement.idobjet } }" class="text-sm font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                    #{{ mouvement.idobjet }}
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                  </router-link>
+                </div>
+              </div>
             </div>
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Date</div>
-                <div class="mt-1 text-gray-900">{{ formatDate(mouvement.daty) }}</div>
-            </div>
-            <div class="sm:col-span-2">
-                <div class="text-xs font-semibold text-gray-500 uppercase">Désignation</div>
-                <div class="mt-1 text-gray-900">{{ mouvement.designation }}</div>
-            </div>
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Magasin</div>
-                <div class="mt-1 text-gray-900">{{ mouvement.libelleMagasin }}</div>
-            </div>
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Type</div>
-                <div class="mt-1 text-gray-900">{{ mouvement.libelleTypeMvtStock }}</div>
-            </div>
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Fabrication Associée</div>
-                <div class="mt-1 text-gray-900">{{ mouvement.idobjet }}</div>
-            </div>
-            <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">État</div>
-                <div class="mt-1 font-semibold text-gray-900">{{ getStatusLabel(mouvement.etat) }}</div>
-            </div>
+          </div>
         </div>
 
-        <!-- Lignes de détail -->
-        <div class="mt-8">
-            <h2 class="text-sm font-semibold text-gray-800 mb-2">Détails du mouvement</h2>
-            <div class="shadow overflow-hidden border border-gray-200 sm:rounded-lg">
-            <table class="min-w-full divide-y divide-gray-200 text-xs">
-                <thead class="bg-gray-50">
-                <tr>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500">Ingrédient</th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500">Entrée</th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500">Sortie</th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500">PU</th>
-                    <th class="px-3 py-2 text-left font-medium text-gray-500">Montant</th>
+        <!-- Détails du mouvement -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Détails du mouvement</h2>
+            <span class="px-2 py-1 text-xs font-bold bg-white text-slate-600 rounded-lg border border-slate-200">{{ mouvement.filles?.length || 0 }} lignes</span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead>
+                <tr class="bg-slate-50/50">
+                  <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Ingrédient</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Entrée</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Sortie</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">P.U.</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
                 </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-100">
-                <tr v-for="fille in mouvement.filles" :key="fille.id">
-                    <td class="px-3 py-2">{{ fille.designation || fille.idProduit }}</td>
-                    <td class="px-3 py-2 text-right">{{ fille.entree }}</td>
-                    <td class="px-3 py-2 text-right">{{ fille.sortie }}</td>
-                    <td class="px-3 py-2 text-right">{{ formatCurrency(fille.pu) }}</td>
-                    <td class="px-3 py-2 text-right">{{ formatCurrency((fille.entree + fille.sortie) * fille.pu) }}</td>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-100">
+                <tr v-for="fille in mouvement.filles" :key="fille.id" class="hover:bg-slate-50 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-slate-900">
+                    {{ fille.designation || fille.idProduit }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold" :class="fille.entree > 0 ? 'text-emerald-600' : 'text-slate-400'">
+                    {{ fille.entree || '-' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold" :class="fille.sortie > 0 ? 'text-amber-600' : 'text-slate-400'">
+                    {{ fille.sortie || '-' }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-600">
+                    {{ formatCurrency(fille.pu) }}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-slate-900">
+                    {{ formatCurrency((fille.entree + fille.sortie) * fille.pu) }}
+                  </td>
                 </tr>
-                </tbody>
+              </tbody>
+              <tfoot>
+                <tr class="bg-slate-50/50">
+                  <td colspan="4" class="px-6 py-4 text-right text-sm font-bold text-slate-900 uppercase">Montant Total</td>
+                  <td class="px-6 py-4 text-right text-lg font-black text-indigo-600">{{ formatCurrency(mouvement.montant) }}</td>
+                </tr>
+              </tfoot>
             </table>
-            </div>
-            <div class="text-right font-bold mt-2 text-sm">Montant Total : {{ formatCurrency(mouvement.montant) }}</div>
+          </div>
         </div>
 
-        <!-- Boutons d'action -->
-        <div class="mt-6 flex justify-end space-x-3">
-            <button
-                v-if="mouvement && mouvement.etat === 1"
-                @click="handleViser"
-                class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-            >
-                Viser le mouvement
-            </button>
-            <button
-                type="button"
-                @click="router.back()"
-                class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-            >
-                Retour
-            </button>
+        <!-- Actions -->
+        <div class="flex items-center justify-end gap-3 pt-4">
+          <button
+            v-if="mouvement && mouvement.etat === 1"
+            @click="handleViser"
+            class="inline-flex items-center px-6 py-2.5 text-sm font-bold text-white bg-emerald-600 rounded-xl hover:bg-emerald-700 transition-all active:scale-95 shadow-emerald-200 shadow-lg"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Viser le mouvement
+          </button>
+          <button
+            @click="router.back()"
+            class="inline-flex items-center px-8 py-2.5 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+          >
+            Retour
+          </button>
         </div>
+      </div>
     </div>
   </div>
 </template>
+
