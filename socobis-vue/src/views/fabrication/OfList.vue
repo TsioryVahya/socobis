@@ -40,15 +40,47 @@ const normalizeDate = (value: any): string | null => {
   return null
 }
 
+const toDdMmYyyy = (value: any): string => {
+  if (!value) return ''
+  const s = String(value).trim()
+  if (!s) return ''
+  // déjà en dd/MM/yyyy
+  if (s.includes('/')) return s
+  // ISO yyyy-MM-dd
+  if (s.includes('-') && s.length >= 10) {
+    const yyyy = s.substring(0, 4)
+    const mm = s.substring(5, 7)
+    const dd = s.substring(8, 10)
+    return `${dd}/${mm}/${yyyy}`
+  }
+  return s
+}
+
 const fetchOfs = async (params?: any) => {
   loading.value = true
   try {
-    const response = await axios.get('/OfServlet?action=list', { params })
-    if (response.data.status === 'success') {
-      ofs.value = response.data.data || []
+    const response = await axios.get('/OfServlet', { params: { action: 'list', ...(params || {}) } })
+
+    let payload: any = response.data
+    if (typeof response.data === 'string') {
+      try {
+        payload = JSON.parse(response.data)
+      } catch (e) {
+        const raw = response.data as string, start = raw.indexOf('{'), end = raw.lastIndexOf('}')
+        if (start !== -1 && end !== -1 && end > start) {
+          payload = JSON.parse(raw.substring(start, end + 1))
+        } else {
+          throw e
+        }
+      }
+    }
+
+    if (payload.status === 'success') {
+      ofs.value = payload.data || []
       displayedOfs.value = ofs.value
+      error.value = null
     } else {
-      error.value = response.data.message
+      error.value = payload.message
     }
   } catch (err: any) {
     console.error(err)
@@ -71,28 +103,14 @@ const applyFilters = () => {
   if (filters.value.cible) params.cible = filters.value.cible
   if (filters.value.remarque) params.remarque = filters.value.remarque
   if (filters.value.libelle) params.libelle = filters.value.libelle
-  if (filters.value.dateBesoinMin) params.besoin1 = filters.value.dateBesoinMin
-  if (filters.value.dateBesoinMax) params.besoin2 = filters.value.dateBesoinMax
-  if (filters.value.dateMin) params.daty1 = filters.value.dateMin
-  if (filters.value.dateMax) params.daty2 = filters.value.dateMax
 
-  loading.value = true
-  axios.get('/OfServlet', { params })
-    .then(response => {
-      if (response.data.status === 'success') {
-        ofs.value = response.data.data
-        displayedOfs.value = ofs.value
-      } else {
-        error.value = response.data.message
-      }
-    })
-    .catch((err: any) => {
-      console.error(err)
-      error.value = err.response?.data?.message || 'Erreur lors du filtrage des Ordres de Fabrication'
-    })
-    .finally(() => {
-      loading.value = false
-    })
+  // IMPORTANT: le backend attend dd/MM/yyyy pour les champs daty/besoin
+  if (filters.value.dateBesoinMin) params.besoin1 = toDdMmYyyy(filters.value.dateBesoinMin)
+  if (filters.value.dateBesoinMax) params.besoin2 = toDdMmYyyy(filters.value.dateBesoinMax)
+  if (filters.value.dateMin) params.daty1 = toDdMmYyyy(filters.value.dateMin)
+  if (filters.value.dateMax) params.daty2 = toDdMmYyyy(filters.value.dateMax)
+
+  fetchOfs(params)
 }
 
 onMounted(fetchOfs)

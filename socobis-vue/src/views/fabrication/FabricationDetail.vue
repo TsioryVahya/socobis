@@ -3,6 +3,7 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { format } from 'date-fns'
+import MvtStockDetailModal from '../../components/MvtStockDetailModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +14,8 @@ const fabrication = ref<any | null>(null)
 const details = ref<any[]>([])
 const mouvements = ref<any[]>([])
 const activeTab = ref('details')
+const isModalVisible = ref(false)
+const selectedMouvementId = ref<string | null>(null)
 
 const tabs = [
   { id: 'details', label: 'Détails' },
@@ -152,15 +155,23 @@ const selectTab = (tabId: string) => {
   activeTab.value = tabId
 }
 
+const openMvtDetailModal = (id: string) => {
+  selectedMouvementId.value = id;
+  isModalVisible.value = true;
+};
+
+const onMovementValidated = () => {
+  // Rafraîchir la liste des mouvements pour voir le changement d'état
+  fetchMouvements();
+};
+
 watch(activeTab, (newTab) => {
   if (newTab === 'details' && details.value.length === 0) {
-    fetchDetails();
-  } else if (newTab === 'mouvements') {
-    // Toujours rafraîchir les mouvements quand on clique sur l'onglet
-    // pour voir les changements après une validation.
-    fetchMouvements();
+    fetchDetails()
+  } else if (newTab === 'mouvements' && mouvements.value.length === 0) {
+    fetchMouvements()
   }
-});
+})
 
 onMounted(async () => {
   loading.value = true
@@ -261,11 +272,7 @@ onMounted(async () => {
                     <tbody class="bg-white divide-y divide-gray-100">
                       <tr v-for="(d, idx) in details" :key="d.id || idx" class="hover:bg-gray-50">
                         <td class="px-3 py-2 whitespace-nowrap">{{ d.id }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">
-                          <router-link :to="{ name: 'IngredientDetail', params: { id: d.idIngredients } }" class="text-blue-600 hover:underline">
-                            {{ d.idIngredients }}
-                          </router-link>
-                        </td>
+                        <td class="px-3 py-2 whitespace-nowrap">{{ d.idingredientsLib }}</td>
                         <td class="px-3 py-2 whitespace-nowrap text-right">{{ d.qte }}</td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ d.idunitelib }}</td>
                         <td class="px-3 py-2 whitespace-nowrap text-right">{{ formatCurrency(d.pu) }}</td>
@@ -299,9 +306,9 @@ onMounted(async () => {
                     <tbody class="bg-white divide-y divide-gray-100">
                       <tr v-for="(mvt, idx) in mouvements" :key="mvt.id || idx" class="hover:bg-gray-50">
                         <td class="px-3 py-2 whitespace-nowrap">
-  <router-link :to="{ name: 'MvtStockDetail', params: { id: mvt.id } }" class="text-blue-600 hover:underline">
+  <a href="#" @click.prevent="openMvtDetailModal(mvt.id)" class="text-blue-600 hover:underline">
     {{ mvt.id }}
-  </router-link>
+  </a>
 </td>
                         <td class="px-3 py-2 whitespace-nowrap">{{ formatDate(mvt.daty) }}</td>
                         <td class="px-3 py-2">{{ mvt.designation }}</td>
@@ -372,4 +379,11 @@ onMounted(async () => {
       </div>
     </div>
   </div>
+  <MvtStockDetailModal
+    v-if="isModalVisible"
+    :visible="isModalVisible"
+    :mouvement-id="selectedMouvementId || ''"
+    @close="isModalVisible = false"
+    @movement-validated="onMovementValidated"
+  />
 </template>
