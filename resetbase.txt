@@ -9,5 +9,5 @@ SELECT username FROM dba_users WHERE username='SOCOBIS';
 
 
 quitena pr l izy d alefa ndray ty
-docker cp "E:\socobis\socobis_20251107\socobis_20251107.dmp" oracle-db:/tmp/socobis_20251107.dmp
+docker cp "D:/ITU/S5/MR TAHIANA/4/socobis/socobis_20251107/socobis_20251107.dmp" oracle-db:/tmp/socobis_20251107.dmp
 docker exec -it oracle-db bash -c "imp system/oracle file=/tmp/socobis_20251107.dmp fromuser=SOCOBIS touser=SOCOBIS ignore=y"

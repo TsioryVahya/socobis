@@ -1,0 +1,14 @@
+docker exec -it oracle-db-station bash
+sqlplus sys as sysdba
+CREATE USE  socobis IDENTIFIED BY socobis;
+GRANT CONNECT, RESOURCE TO socobis;
+GRANT DBA TO socobis;
+ALTER USER socobis DEFAULT TABLESPACE USERS QUOTA UNLIMITED ON USERS;
+SELECT username FROM dba_users WHERE username='socobis';
+
+
+
+quitena pr l izy d alefa ndray ty
+
+docker cp "D:/ITU/S5/MR TAHIANA/4/Meuble/atipik0601.dmp" oracle-db-station:/tmp/atipik0601.dmp
+docker exec -it oracle-db-station bash -c "imp system/oracle file=/tmp/atipik0601.dmp fromuser=ATIPIK touser=ATIPIK ignore=y"
