@@ -1,0 +1,93 @@
+Veuillez resoudre ce plrobleme en premier =Liste des Fabrications
+Nouvelle Fabrication
+Filtre de recherche
+id
+Lancée par
+cible
+remarque
+libelle
+Date min
+
+12/01/2026
+Date max
+
+14/01/2026
+Id Ordre de fabrication
+Id Ordre de fabrication fille
+État
+
+Tous
+Rechercher
+Récapitulation
+Nombre : 2
+Total : 2
+ID	Lancée par	Cible	Remarque	Désignation	Date	Id ordre de fab	Id Ordre fab fille	État
++FAB002947	MAG000265	MAG000265		Test Creatiovpp	janv. 14, 2026			CREE
++FAB002944	MAG000265	MAG000265	sds	Test Creation Neuve	janv. 14, 2026			VALIDEE
+ et quand je valide cote APP VUE=D
+FAB002947
+Remarque
+-
+Désignation
+Test Creatiovpp
+Date de besoin
+-
+Date
+janv. 14, 2026
+Ordre de fabrication fille associé
+-
+Ordre de fabrication associé
+-
+Lancée par
+MAG000265
+Cible
+MAG000265
+ÉTAT
+CREE
+Fabrication précédente
+-
+Fabrication Suivant
+-
+Détails
+Mouvement de stock
+Charges rattachées
+Rapprochement
+Historique
+Rapprochement Globale
+Déchets
+Résidu
+Attribution
+Heure Supplémentaire
+Charge personnelle
+Détails
+id	ID Ingrédient	Composants	Désignation	Date de besoin	Prix unitaire	Quantité	Montant	Unité	Machine
+FABF002951	ING000T0071	Papier de Tchido Choco	Test Creation Neuve		0	500	0		FPL
+Résidu
+iste des Fabrications
+Nouvelle Fabrication
+Filtre de recherche
+id
+Lancée par
+cible
+remarque
+libelle
+Date min
+
+12/01/2026
+Date max
+
+14/01/2026
+Id Ordre de fabrication
+Id Ordre de fabrication fille
+État
+
+Tous
+Rechercher
+Récapitulation
+Nombre : 1
+Total : 1
+ID	Lancée par	Cible	Remarque	Désignation	Date	Id ordre de fab	Id Ordre fab fille	État
++FAB002944	MAG000265	MAG000265	sds	Test Creation Neuve	janv. 14, 2026			VALIDEE
+
+
+Qu est ce que le bouton valider fait , est ce que c est comme dans ERP comme la page

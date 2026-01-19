@@ -154,6 +154,7 @@ public interface UserEJB {
     public ResultatEtSomme getDataPageGroupe(ClassMAPTable e, String[] groupe, String[] sommeGroupe, String[] colInt, String[] valInt, int numPage, String apresWhere, String[] nomColSomme, String ordre, Connection c, int npp) throws Exception;
 
     public Object[] getData(ClassMAPTable e, String[] colInt, String[] valInt, Connection c, String apresWhere) throws Exception;
+    public Object[] getData(ClassMAPTable e, HttpServletRequest req, String[] listeCrt, String[] listeInt, Connection c, String apresWhere) throws Exception;
 
     public Object createObject(ClassMAPTable o) throws Exception;
 
