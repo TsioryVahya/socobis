@@ -578,6 +578,7 @@ public class Fabrication extends Of {
                 crt.setNomTable("as_recetteFabLibSt");
                 crt.setIdproduits(this.getId());
                 Recette[] recettes = (Recette[])CGenUtil.rechercher(crt,null,null,c,"");
+                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: " + recettes.length + " ingrédients.");
                 FabricationFilleCpl[] detailsNouveau = new FabricationFilleCpl[recettes.length];
                 List<MvtStockFille> mvtDetails = new ArrayList<MvtStockFille>();
 
@@ -585,6 +586,7 @@ public class Fabrication extends Of {
                 cibleCtr.setNomTable("V_ETATSTOCK_ENTREE");
                 cibleCtr.setIdMagasin(enbase.getCible());
                 MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[])CGenUtil.rechercher(cibleCtr, null, null, c, "order by daty desc");
+                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: " + etatStock.length + " lignes.");
 
                 Vector<MvtStockEntreeAvecReste> vect = new Vector<MvtStockEntreeAvecReste>(Arrays.asList(etatStock));
 
@@ -669,13 +671,15 @@ public class Fabrication extends Of {
                 crt.setNomTable("as_recetteFabLibSt");
                 crt.setIdproduits(this.getId());
                 Recette[] recettes = (Recette[])CGenUtil.rechercher(crt,null,null,c,"");
+                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: " + recettes.length + " ingrédients.");
                 FabricationFilleCpl[] detailsNouveau = new FabricationFilleCpl[recettes.length];
                 List<MvtStockFille> mvtDetails = new ArrayList<MvtStockFille>();
 
                 MvtStockEntreeAvecReste cibleCtr = new MvtStockEntreeAvecReste();
                 cibleCtr.setNomTable("V_ETATSTOCK_ENTREE");
-                cibleCtr.setIdMagasin(cible!=null ?cible : enbase.getCible());
+                cibleCtr.setIdMagasin(enbase.getCible());
                 MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[])CGenUtil.rechercher(cibleCtr, null, null, c, "order by daty desc");
+                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: " + etatStock.length + " lignes.");
 
                 Vector<MvtStockEntreeAvecReste> vect = new Vector<MvtStockEntreeAvecReste>(Arrays.asList(etatStock));
 
@@ -1022,9 +1026,6 @@ public class Fabrication extends Of {
 
     @Override
     public Object validerObject(MapUtilisateur u, Connection c) throws Exception {
-        if((u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0) && (u.getIdrole().compareTo(ConstanteSocobis.CONTREMAITRE_RANG) != 0)){
-            throw new Exception("Vous n’avez pas le droit de valider une fabrication");
-        }
         return super.validerObject(u, c);
     }
 

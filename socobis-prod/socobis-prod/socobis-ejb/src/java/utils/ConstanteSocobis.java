@@ -21,7 +21,7 @@ public class ConstanteSocobis {
     public static final double EQ_CARTON_PETRIN = 105; // 1 petrin = 105 cartons
 
     public static final int CHEFFAB_RANG = 6;
-    public static final String CHEFFABR_RANG = "cheffab";
+    public static final String CHEFFABR_RANG = "dg";
     public static final String CONTREMAITRE_RANG = "ctrmaitre";
     public static final String MAGCENTRAL_RANG = "magcentral";
     public static final String DG_RANG = "dg";

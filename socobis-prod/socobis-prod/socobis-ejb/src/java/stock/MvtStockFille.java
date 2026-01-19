@@ -306,6 +306,18 @@ public class MvtStockFille extends ClassFille{
     }
     @Override
     public ClassMAPTable createObject(String u, Connection c) throws Exception {
+        System.out.println("DEBUG INSERT MvtStockFille: id=" + getId()
+                + ", idMvtStock=" + getIdMvtStock()
+                + ", idProduit=" + getIdProduit()
+                + ", entree=" + getEntree()
+                + ", sortie=" + getSortie()
+                + ", pu=" + getPu()
+                + ", montant=" + getMontant());
+        try {
+            System.out.println("DEBUG INSERT MvtStockFille SQL = " + this.getSQLinsert(c));
+        } catch (Exception ex) {
+            System.out.println("DEBUG INSERT MvtStockFille SQL = <ERROR generating SQL> " + ex.getMessage());
+        }
         return super.createObject(u, c);
     }
 

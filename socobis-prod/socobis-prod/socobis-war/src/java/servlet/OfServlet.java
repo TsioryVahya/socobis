@@ -46,15 +46,16 @@ public class OfServlet extends HttpServlet {
             // Mode LISTE
             if ("list".equalsIgnoreCase(action)) {
                 Of critere = new Of();
-                String idOf = request.getParameter("id");
-                String where = "";
-                if (idOf != null && !idOf.isEmpty()) {
-                    where = " AND id = '" + idOf + "'";
-                }
-                
+                // Utiliser la même vue que les JSP de liste (OFABLIB)
+                critere.setNomTable("OFABLIB");
+
+                // Même logique de critères que ordre-fabrication-liste.jsp
+                String[] listeCrt = {"id", "lancepar", "cible", "remarque", "libelle", "besoin", "daty"};
+                String[] listeInt = {"daty", "besoin"};
+
                 Connection c = new UtilDB().GetConn();
                 try {
-                    Object[] list = u.getData(critere, null, null, c, where);
+                    Object[] list = u.getData(critere, request, listeCrt, listeInt, c, "");
                     res.put("status", "success");
                     res.put("count", list != null ? list.length : 0);
                     res.put("data", list);
