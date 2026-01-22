@@ -13,6 +13,7 @@ const magasins = ref<Array<{ id: string; libelle: string }>>([])
 const bonsDeCommande = ref<Array<{ id: string; designation: string; client?: string; reference?: string }>>([])
 const ingredients = ref<Array<{ id: string; libelle: string; unite?: string }>>([])
 const ofFilles = ref<Array<{ id: string; libelle: string }>>([])
+const machines = ref<Array<{ id: string; libelle: string }>>([])
 
 const form = ref({
   daty: new Date().toISOString().split('T')[0],
@@ -28,7 +29,7 @@ const form = ref({
       idIngredients: 'ING000T0129',
       qte: 75600,
       idunite: 'UNT001',
-      idMachine: 'MACHN000004',
+      idMachine: '',
       libelle: 'Test Creation Neuve',
       remarque: '',
       idBcFille: ''
@@ -43,7 +44,7 @@ const addFille = () => {
     idIngredients: '',
     qte: 0,
     idunite: 'UNT001',
-    idMachine: 'MACHN000004',
+    idMachine: '',
     libelle: form.value.libelle,
     remarque: '',
     idBcFille: ''
@@ -118,6 +119,14 @@ onMounted(async () => {
     ingredients.value = ingResponse.data || []
     const ofResponse = await axios.get('/OfFilleServlet')
     ofFilles.value = ofResponse.data || []
+    // Récupération des machines pour la liste déroulante (équivalent JSP fabrication-saisie)
+    const machResponse = await axios.get('/MachineServlet')
+    if (machResponse.data && machResponse.data.status === 'success') {
+      machines.value = machResponse.data.data || []
+    } else if (Array.isArray(machResponse.data)) {
+      // fallback si l'API renvoie directement un tableau
+      machines.value = machResponse.data
+    }
   } catch (e) {
     console.error(e)
   }
@@ -333,12 +342,20 @@ onMounted(async () => {
 
                       <div class="col-span-6 sm:col-span-2">
                         <label class="block text-sm font-medium text-gray-700">Machine</label>
-                        <input
+                        <select
                           v-model="fille.idMachine"
-                          type="text"
                           required
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                         >
+                          <option disabled value="">Sélectionner une machine</option>
+                          <option
+                            v-for="machine in machines"
+                            :key="machine.id"
+                            :value="machine.id"
+                          >
+                            {{ machine.libelle }}
+                          </option>
+                        </select>
                       </div>
 
                       <div class="col-span-6 sm:col-span-2">
