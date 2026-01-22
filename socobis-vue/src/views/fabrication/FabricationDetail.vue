@@ -17,6 +17,7 @@ const activeTab = ref('details')
 const tabs = [
   { id: 'details', label: 'Détails' },
   { id: 'mouvements', label: 'Mouvement de stock' },
+  { id: 'recette', label: 'Recette & Reviens' },
   // { id: 'charges', label: 'Charges rattachées' },
   // { id: 'rapprochement', label: 'Rapprochement' },
   // { id: 'historique', label: 'Historique' }
@@ -148,7 +149,23 @@ const fetchMouvements = async () => {
   }
 }
 
-const selectTab = (tabId: string) => {
+const selectTab = async (tabId: string) => {
+  if (tabId === 'recette') {
+    // Charger les mouvements si nécessaire et rediriger vers le mouvement de sortie
+    if (mouvements.value.length === 0) {
+      await fetchMouvements();
+    }
+    const sortie = mouvements.value.find((m: any) => {
+      const t = (m.typeMouvement || '').toString().toLowerCase();
+      return t.includes('sortie');
+    });
+    if (sortie && sortie.id) {
+      router.push({ name: 'RecetteReviensDetail', params: { id: sortie.id } });
+    } else {
+      error.value = "Aucun mouvement de sortie trouvé pour cette fabrication.";
+    }
+    return;
+  }
   activeTab.value = tabId
 }
 

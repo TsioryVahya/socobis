@@ -40,6 +40,12 @@ const routes = [
     meta: { requiresAuth: true }
   },
   {
+    path: '/recette-reviens/:id',
+    name: 'RecetteReviensDetail',
+    component: MvtStockDetail,
+    meta: { requiresAuth: true, isRecetteReviens: true }
+  },
+  {
     path: '/ingredients/:id',
     name: 'IngredientDetail',
     component: IngredientDetail,

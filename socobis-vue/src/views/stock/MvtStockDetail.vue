@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import axios from 'axios';
 import { format } from 'date-fns';
@@ -10,12 +10,35 @@ const router = useRouter();
 const loading = ref(true);
 const error = ref<string | null>(null);
 const mouvement = ref<any | null>(null);
+const charges = ref<any[]>([]);
 
 const getStatusLabel = (status: any) => {
   if (status === 1 || status === '1') return 'CRÉÉ';
   if (status === 10 || status === '10') return 'VALIDÉ';
   if (status === 20 || status === '20') return 'TERMINÉ';
   return status || 'INCONNU';
+};
+
+const fetchCharges = async (idFabrication: string) => {
+  try {
+    const response = await axios.get('/ChargeServlet', {
+      params: { action: 'listByFabrication', idFabrication }
+    });
+
+    let payload: any = response.data;
+    if (typeof response.data === 'string') {
+      try { payload = JSON.parse(response.data); } catch (e) {
+        const raw = response.data as string, start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) { payload = JSON.parse(raw.substring(start, end + 1)); } else { throw e; }
+      }
+    }
+
+    if (payload.status === 'success') {
+      charges.value = payload.data || [];
+    }
+  } catch (err) {
+    console.error('Erreur chargement charges:', err);
+  }
 };
 
 const formatCurrency = (value: number) => {
@@ -31,6 +54,35 @@ const formatDate = (dateString: string) => {
     return dateString;
   }
 };
+
+const getLigneMontant = (fille: any) => {
+  const entree = parseFloat(fille.entree ?? '0');
+  const sortie = parseFloat(fille.sortie ?? '0');
+  const pu = parseFloat(fille.pu ?? '0');
+  const qte = (isNaN(entree) ? 0 : entree) + (isNaN(sortie) ? 0 : sortie);
+  const montant = qte * (isNaN(pu) ? 0 : pu);
+  return montant;
+};
+
+const totalMontant = computed(() => {
+  if (!mouvement.value || !Array.isArray(mouvement.value.filles)) return 0;
+  return mouvement.value.filles.reduce((sum: number, f: any) => {
+    const m = getLigneMontant(f);
+    return sum + (isNaN(m) ? 0 : m);
+  }, 0);
+});
+
+const totalCharges = computed(() => {
+  if (!Array.isArray(charges.value)) return 0;
+  return charges.value.reduce((sum: number, c: any) => {
+    const montant = typeof c.montant === 'number' ? c.montant : parseFloat(c.montant || '0');
+    return sum + (isNaN(montant) ? 0 : montant);
+  }, 0);
+});
+
+const totalGlobal = computed(() => {
+  return totalMontant.value + totalCharges.value;
+});
 
 const fetchMouvementDetail = async () => {
   const id = route.params.id as string;
@@ -55,6 +107,10 @@ const fetchMouvementDetail = async () => {
 
     if (payload.status === 'success') {
       mouvement.value = payload.data;
+      // Si on est sur la page Recette & Reviens et qu'on a une fabrication associée, charger les charges
+      if (route.meta && (route.meta as any).isRecetteReviens && mouvement.value && mouvement.value.idobjet) {
+        await fetchCharges(mouvement.value.idobjet as string);
+      }
     } else {
       error.value = payload.message || 'Erreur lors du chargement du mouvement.';
     }
@@ -117,7 +173,9 @@ onMounted(fetchMouvementDetail);
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
               </svg>
             </button>
-            <h1 class="text-xl font-bold text-slate-900">Fiche du mouvement de stock</h1>
+            <h1 class="text-xl font-bold text-slate-900">
+              {{ route.meta && (route.meta as any).isRecetteReviens ? 'Recette & Reviens' : 'Fiche du mouvement de stock' }}
+            </h1>
           </div>
           
           <div v-if="mouvement" class="flex items-center gap-3">
@@ -129,6 +187,79 @@ onMounted(fetchMouvementDetail);
             }">
               {{ getStatusLabel(mouvement.etat) }}
             </span>
+          </div>
+        </div>
+
+        <!-- Charges rattachées (pour Recette & Reviens) -->
+        <div
+          v-if="route.meta && (route.meta as any).isRecetteReviens"
+          class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden"
+        >
+          <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Charges rattachées</h2>
+            <span class="px-2 py-1 text-xs font-bold bg-white text-slate-600 rounded-lg border border-slate-200">
+              {{ charges.length }} ligne(s)
+            </span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-slate-200">
+              <thead>
+                <tr class="bg-slate-50/50">
+                  <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type de charge</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Quantité</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Prix unitaire</th>
+                  <th class="px-6 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
+                  <th class="px-6 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">État</th>
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-slate-100">
+                <tr v-for="(c, idx) in charges" :key="c.id || idx" class="hover:bg-slate-50 transition-colors">
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-900">{{ c.libelle }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ c.typelib }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-900 font-bold">{{ c.qte }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right text-slate-600">{{ formatCurrency(c.pu) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ formatCurrency(c.montant) }}</td>
+                  <td class="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{{ c.etatlib }}</td>
+                </tr>
+                <tr v-if="charges.length === 0">
+                  <td colspan="6" class="px-6 py-8 text-center text-slate-400 italic">
+                    Aucune charge rattachée pour cette fabrication.
+                  </td>
+                </tr>
+              </tbody>
+              <tfoot v-if="charges.length > 0">
+                <tr class="bg-slate-50/50">
+                  <td colspan="4" class="px-6 py-4 text-right text-sm font-bold text-slate-900 uppercase">Total Charges</td>
+                  <td class="px-6 py-4 text-right text-lg font-black text-indigo-600">{{ formatCurrency(totalCharges) }}</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        </div>
+
+        <!-- Synthèse Recette & Reviens -->
+        <div
+          v-if="route.meta && (route.meta as any).isRecetteReviens"
+          class="bg-white rounded-2xl shadow-sm border border-emerald-200 overflow-hidden mt-4"
+        >
+          <div class="px-6 py-4 border-b border-emerald-100 bg-emerald-50/60 flex items-center justify-between">
+            <h2 class="text-sm font-bold text-emerald-900 uppercase tracking-wider">Synthèse Recette & Reviens</h2>
+          </div>
+          <div class="p-6 grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-500 uppercase">Total ingrédients</p>
+              <p class="text-base font-bold text-slate-900">{{ formatCurrency(totalMontant) }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-500 uppercase">Total charges</p>
+              <p class="text-base font-bold text-slate-900">{{ formatCurrency(totalCharges) }}</p>
+            </div>
+            <div class="space-y-1">
+              <p class="text-xs font-semibold text-slate-500 uppercase">Reviens global</p>
+              <p class="text-lg font-black text-emerald-700">{{ formatCurrency(totalGlobal) }}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -231,14 +362,14 @@ onMounted(fetchMouvementDetail);
                     {{ formatCurrency(fille.pu) }}
                   </td>
                   <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-bold text-slate-900">
-                    {{ formatCurrency((fille.entree + fille.sortie) * fille.pu) }}
+                    {{ formatCurrency(getLigneMontant(fille)) }}
                   </td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="bg-slate-50/50">
                   <td colspan="4" class="px-6 py-4 text-right text-sm font-bold text-slate-900 uppercase">Montant Total</td>
-                  <td class="px-6 py-4 text-right text-lg font-black text-indigo-600">{{ formatCurrency(mouvement.montant) }}</td>
+                  <td class="px-6 py-4 text-right text-lg font-black text-indigo-600">{{ formatCurrency(totalMontant) }}</td>
                 </tr>
               </tfoot>
             </table>
