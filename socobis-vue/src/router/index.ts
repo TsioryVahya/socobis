@@ -9,6 +9,8 @@ import FabricationDetail from '../views/fabrication/FabricationDetail.vue'
 import FabricationMvtStock from '../views/fabrication/FabricationMvtStock.vue'
 import OfList from '../views/fabrication/OfList.vue'
 import OfCreate from '../views/fabrication/OfCreate.vue'
+import MvtStockDetail from '../views/stock/MvtStockDetail.vue'
+import IngredientDetail from '../views/produits/IngredientDetail.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
@@ -31,6 +33,24 @@ const routes = [
   },
   { path: '/ofs', component: OfList },
   { path: '/ofs/nouveau', component: OfCreate },
+  {
+    path: '/mouvements/:id',
+    name: 'MvtStockDetail',
+    component: MvtStockDetail,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/recette-reviens/:id',
+    name: 'RecetteReviensDetail',
+    component: MvtStockDetail,
+    meta: { requiresAuth: true, isRecetteReviens: true }
+  },
+  {
+    path: '/ingredients/:id',
+    name: 'IngredientDetail',
+    component: IngredientDetail,
+    meta: { requiresAuth: true }
+  },
 ]
 
 const router = createRouter({
@@ -38,7 +58,7 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach((to, _from, next) => {
   const isAuthenticated = localStorage.getItem('user') !== null
   
   if (!to.meta.public && !isAuthenticated) {
