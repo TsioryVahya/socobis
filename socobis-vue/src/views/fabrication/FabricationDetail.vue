@@ -3,7 +3,6 @@ import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import axios from 'axios'
 import { format } from 'date-fns'
-import MvtStockDetailModal from '../../components/MvtStockDetailModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,8 +13,6 @@ const fabrication = ref<any | null>(null)
 const details = ref<any[]>([])
 const mouvements = ref<any[]>([])
 const activeTab = ref('details')
-const isModalVisible = ref(false)
-const selectedMouvementId = ref<string | null>(null)
 
 const tabs = [
   { id: 'details', label: 'Détails' },
@@ -155,23 +152,15 @@ const selectTab = (tabId: string) => {
   activeTab.value = tabId
 }
 
-const openMvtDetailModal = (id: string) => {
-  selectedMouvementId.value = id;
-  isModalVisible.value = true;
-};
-
-const onMovementValidated = () => {
-  // Rafraîchir la liste des mouvements pour voir le changement d'état
-  fetchMouvements();
-};
-
 watch(activeTab, (newTab) => {
   if (newTab === 'details' && details.value.length === 0) {
-    fetchDetails()
-  } else if (newTab === 'mouvements' && mouvements.value.length === 0) {
-    fetchMouvements()
+    fetchDetails();
+  } else if (newTab === 'mouvements') {
+    // Toujours rafraîchir les mouvements quand on clique sur l'onglet
+    // pour voir les changements après une validation.
+    fetchMouvements();
   }
-})
+});
 
 onMounted(async () => {
   loading.value = true
@@ -189,201 +178,269 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="content-wrapper py-4 px-2 sm:px-4">
-    <h1 class="box-title text-xl font-semibold mb-4 flex items-center gap-2">
-      <button type="button" @click="router.back()" class="text-gray-500 hover:text-gray-700">
-        &#8592;
-      </button>
-      <span>Fiche de Fabrication</span>
-    </h1>
-
-    <div v-if="loading" class="text-center py-10 text-gray-500">
-      Chargement...
+  <div class="min-h-screen bg-slate-50/50 pb-12">
+    <!-- Header -->
+    <div class="bg-white border-b border-slate-200 sticky top-0 z-10 backdrop-blur-md bg-white/80">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+          <div class="flex items-center gap-4">
+            <button 
+              @click="router.back()" 
+              class="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-500 hover:text-slate-700"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+              </svg>
+            </button>
+            <h1 class="text-xl font-bold text-slate-900">Fiche de Fabrication</h1>
+          </div>
+          
+          <div v-if="fabrication" class="flex items-center gap-3">
+            <span :class="{
+              'px-3 py-1 text-xs font-bold rounded-full border': true,
+              'bg-blue-50 text-blue-700 border-blue-100': fabrication.etat == 1,
+              'bg-emerald-50 text-emerald-700 border-emerald-100': fabrication.etat == 10 || fabrication.etat == 11,
+              'bg-amber-50 text-amber-700 border-amber-100': fabrication.etat != 1 && fabrication.etat != 10 && fabrication.etat != 11
+            }">
+              {{ getStatusLabel(fabrication.etat) }}
+            </span>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div v-else-if="error" class="max-w-3xl mx-auto bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md">
-      {{ error }}
-    </div>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div v-if="loading" class="flex flex-col items-center justify-center py-20">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
+        <p class="mt-4 text-slate-500 font-medium">Chargement des données...</p>
+      </div>
 
-    <div v-else-if="fabrication" class="max-w-5xl mx-auto">
-      <div class="box box-fiche">
-        <div class="box-body">
-          <div class="bg-white p-4 sm:p-6 rounded-md shadow">
-            <!-- Récapitulatif principal -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-              <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">ID</div>
-                <div class="mt-1 text-sm font-medium text-gray-900">{{ fabrication.id }}</div>
+      <div v-else-if="error" class="bg-red-50 border border-red-100 rounded-2xl p-4 flex items-start gap-3 text-red-700">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+        </svg>
+        <p class="font-medium">{{ error }}</p>
+      </div>
+
+      <div v-else-if="fabrication" class="space-y-6">
+        <!-- Informations Générales -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden transition-all hover:shadow-md">
+          <div class="px-6 py-4 border-b border-slate-100 bg-slate-50/50">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Informations Générales</h2>
+          </div>
+          <div class="p-6">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Référence</p>
+                <p class="text-base font-bold text-indigo-600">#{{ fabrication.id }}</p>
               </div>
-              <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Remarque</div>
-                <div class="mt-1 text-sm text-gray-900">{{ fabrication.remarque || '-' }}</div>
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Date de création</p>
+                <p class="text-base font-medium text-slate-900">{{ formatDate(fabrication.daty) }}</p>
               </div>
-              <div class="sm:col-span-2">
-                <div class="text-xs font-semibold text-gray-500 uppercase">Désignation</div>
-                <div class="mt-1 text-sm text-gray-900">{{ fabrication.libelle || '-' }}</div>
+              <div class="space-y-1">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Désignation</p>
+                <p class="text-base font-medium text-slate-900">{{ fabrication.libelle || '-' }}</p>
               </div>
-              <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">Date</div>
-                <div class="mt-1 text-sm text-gray-900">{{ formatDate(fabrication.daty) }}</div>
-              </div>
-              <div>
-                <div class="text-xs font-semibold text-gray-500 uppercase">ÉTAT</div>
-                <div class="mt-1 text-sm font-medium text-gray-900">{{ getStatusLabel(fabrication.etat) }}</div>
+              <div class="md:col-span-3 space-y-1">
+                <p class="text-xs font-semibold text-slate-500 uppercase">Remarque</p>
+                <p class="text-base text-slate-600 bg-slate-50 p-3 rounded-xl border border-slate-100">{{ fabrication.remarque || 'Aucune remarque' }}</p>
               </div>
             </div>
+          </div>
+        </div>
 
-            <!-- Onglets -->
-            <div class="border-b border-gray-200 mb-4">
-              <nav class="-mb-px flex flex-wrap space-x-4 text-sm" aria-label="Tabs">
-                <a
-                  v-for="tab in tabs"
-                  :key="tab.id"
-                  href="#"
-                  @click.prevent="selectTab(tab.id)"
-                  :class="[
-                    'whitespace-nowrap py-2 px-3 border-b-2 font-medium',
-                    activeTab === tab.id
-                      ? 'border-indigo-500 text-indigo-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                  ]"
-                >
-                  {{ tab.label }}
-                </a>
-              </nav>
-            </div>
+        <!-- Onglets -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+          <div class="border-b border-slate-200">
+            <nav class="flex -mb-px px-6" aria-label="Tabs">
+              <button
+                v-for="tab in tabs"
+                :key="tab.id"
+                @click="selectTab(tab.id)"
+                :class="[
+                  'whitespace-nowrap py-4 px-6 border-b-2 font-bold text-sm transition-all',
+                  activeTab === tab.id
+                    ? 'border-indigo-600 text-indigo-600 bg-indigo-50/30'
+                    : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+                ]"
+              >
+                {{ tab.label }}
+              </button>
+            </nav>
+          </div>
 
-            <!-- Contenu des onglets -->
-            <div class="mt-4">
+          <div class="p-6">
+            <transition name="fade" mode="out-in">
               <!-- Onglet Détails -->
-              <div v-if="activeTab === 'details'">
-                <div class="shadow overflow-hidden border border-gray-200 sm:rounded-lg">
-                  <table class="min-w-full divide-y divide-gray-200 text-xs">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">ID</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Composant</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Quantité</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Unité</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">PU</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Montant</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                      <tr v-for="(d, idx) in details" :key="d.id || idx" class="hover:bg-gray-50">
-                        <td class="px-3 py-2 whitespace-nowrap">{{ d.id }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ d.idingredientsLib }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap text-right">{{ d.qte }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ d.idunitelib }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap text-right">{{ formatCurrency(d.pu) }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap text-right">{{ formatCurrency(d.montant) }}</td>
-                      </tr>
-                      <tr v-if="details.length === 0">
-                        <td colspan="6" class="px-3 py-4 text-center text-[11px] text-gray-500 italic">
-                          Aucun détail pour cette fabrication.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <div v-if="activeTab === 'details'" key="details" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                  <thead>
+                    <tr class="bg-slate-50">
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Composant</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Quantité</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Unité</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">P.U.</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-slate-100">
+                    <tr v-for="(d, idx) in details" :key="d.id || idx" class="hover:bg-slate-50/80 transition-colors group">
+                      <td class="px-4 py-3 whitespace-nowrap text-xs text-slate-500 font-mono">{{ d.id }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <router-link :to="{ name: 'IngredientDetail', params: { id: d.idIngredients } }" class="text-sm font-semibold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                          {{ d.idIngredients }}
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 opacity-0 group-hover:opacity-100 transition-opacity" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </router-link>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ d.qte }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ d.idunitelib }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-slate-600">{{ formatCurrency(d.pu) }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ formatCurrency(d.montant) }}</td>
+                    </tr>
+                    <tr v-if="details.length === 0">
+                      <td colspan="6" class="px-4 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                          </svg>
+                          <p class="text-slate-400 font-medium italic">Aucun détail pour cette fabrication.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
 
-              <!-- Onglet Mouvements de stock -->
-              <div v-if="activeTab === 'mouvements'">
-                <div class="shadow overflow-hidden border border-gray-200 sm:rounded-lg">
-                  <table class="min-w-full divide-y divide-gray-200 text-xs">
-                    <thead class="bg-gray-50">
-                      <tr>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">ID</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Date</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Désignation</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Type</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Magasin</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">Montant</th>
-                        <th class="px-3 py-2 text-left font-medium text-gray-500">État</th>
-                      </tr>
-                    </thead>
-                    <tbody class="bg-white divide-y divide-gray-100">
-                      <tr v-for="(mvt, idx) in mouvements" :key="mvt.id || idx" class="hover:bg-gray-50">
-                        <td class="px-3 py-2 whitespace-nowrap">
-  <a href="#" @click.prevent="openMvtDetailModal(mvt.id)" class="text-blue-600 hover:underline">
-    {{ mvt.id }}
-  </a>
-</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ formatDate(mvt.daty) }}</td>
-                        <td class="px-3 py-2">{{ mvt.designation }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ mvt.typeMouvement }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ mvt.magasin }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap text-right">{{ formatCurrency(mvt.montant) }}</td>
-                        <td class="px-3 py-2 whitespace-nowrap">{{ getMvtStatusLabel(mvt.etat) }}</td>
-                      </tr>
-                      <tr v-if="mouvements.length === 0">
-                        <td colspan="7" class="px-3 py-4 text-center text-[11px] text-gray-500 italic">
-                          Aucun mouvement de stock pour cette fabrication.
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
+              <!-- Onglet Mouvements -->
+              <div v-else-if="activeTab === 'mouvements'" key="mouvements" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-slate-200">
+                  <thead>
+                    <tr class="bg-slate-50">
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Désignation</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Magasin</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
+                      <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">État</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-slate-100">
+                    <tr v-for="(mvt, idx) in mouvements" :key="mvt.id || idx" class="hover:bg-slate-50/80 transition-colors group">
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <router-link :to="{ name: 'MvtStockDetail', params: { id: mvt.id } }" class="text-xs font-mono font-bold text-indigo-600 hover:text-indigo-800">
+                          #{{ mvt.id }}
+                        </router-link>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ formatDate(mvt.daty) }}</td>
+                      <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ mvt.designation }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-slate-100 text-slate-600 border border-slate-200">
+                          {{ mvt.typeMouvement }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ mvt.magasin }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ formatCurrency(mvt.montant) }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-center">
+                        <span :class="{
+                          'px-2 py-0.5 text-[10px] font-bold rounded-full': true,
+                          'bg-blue-50 text-blue-600': mvt.etat == 1,
+                          'bg-emerald-50 text-emerald-600': mvt.etat >= 10,
+                          'bg-slate-50 text-slate-600': mvt.etat < 1 && mvt.etat != null
+                        }">
+                          {{ getMvtStatusLabel(mvt.etat) }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr v-if="mouvements.length === 0">
+                      <td colspan="7" class="px-4 py-12 text-center">
+                        <div class="flex flex-col items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                          </svg>
+                          <p class="text-slate-400 font-medium italic">Aucun mouvement de stock pour cette fabrication.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
               </div>
-            </div>
+            </transition>
+          </div>
+        </div>
 
-            <!-- Boutons d'action -->
-            <div class="mt-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div class="flex flex-wrap gap-2">
-                 <button
-                  type="button"
-                  class="inline-flex justify-center py-1.5 px-3 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'residu' } })"
-                >
-                  Résidu
-                </button>
-                <button
-                  v-if="fabrication.etat >= 11 || fabrication.etat === '11'"
-                  type="button"
-                  class="inline-flex justify-center py-1.5 px-3 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'entree' } })"
-                >
-                  Mouvement entrée
-                </button>
-                <button
-                  v-if="fabrication.etat >= 11 || fabrication.etat === '11'"
-                  type="button"
-                  class="inline-flex justify-center py-1.5 px-3 border border-gray-300 shadow-sm text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                  @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'sortie' } })"
-                >
-                  Mouvement sortie
-                </button>
-              </div>
+        <!-- Actions -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+          <div class="flex flex-wrap items-center gap-2">
+            <button
+              @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'residu' } })"
+              class="inline-flex items-center px-4 py-2 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+              Résidu
+            </button>
+            <template v-if="fabrication.etat >= 11 || fabrication.etat === '11'">
+              <button
+                @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'entree' } })"
+                class="inline-flex items-center px-4 py-2 text-sm font-bold text-emerald-700 bg-emerald-50 border border-emerald-100 rounded-xl hover:bg-emerald-100 transition-all active:scale-95 shadow-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
+                </svg>
+                Entrée Stock
+              </button>
+              <button
+                @click="router.push({ name: 'FabricationMvtStock', params: { id: fabrication.id, type: 'sortie' } })"
+                class="inline-flex items-center px-4 py-2 text-sm font-bold text-amber-700 bg-amber-50 border border-amber-100 rounded-xl hover:bg-amber-100 transition-all active:scale-95 shadow-sm"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sortie Stock
+              </button>
+            </template>
+          </div>
 
-              <div class="flex justify-end space-x-3">
-                <button
-                  v-if="fabrication.etat === 1 || fabrication.etat === '1'"
-                  type="button"
-                  @click="handleValidate"
-                  class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700"
-                >
-                  Valider
-                </button>
-                <button
-                  type="button"
-                  @click="router.back()"
-                  class="inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-                >
-                  Retour à la liste
-                </button>
-              </div>
-            </div>
+          <div class="flex items-center gap-3 w-full sm:w-auto">
+            <button
+              v-if="fabrication.etat === 1 || fabrication.etat === '1'"
+              @click="handleValidate"
+              class="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-indigo-200 shadow-lg"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Valider la fabrication
+            </button>
+            <button
+              @click="router.push('/fabrications')"
+              class="flex-1 sm:flex-none inline-flex items-center justify-center px-6 py-2.5 text-sm font-bold text-slate-700 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all active:scale-95"
+            >
+              Retour
+            </button>
           </div>
         </div>
       </div>
     </div>
   </div>
-  <MvtStockDetailModal
-    v-if="isModalVisible"
-    :visible="isModalVisible"
-    :mouvement-id="selectedMouvementId || ''"
-    @close="isModalVisible = false"
-    @movement-validated="onMovementValidated"
-  />
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(4px);
+}
+</style>
+

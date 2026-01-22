@@ -25,7 +25,7 @@ public class ConstanteSocobis {
     public static final String CONTREMAITRE_RANG = "ctrmaitre";
     public static final String MAGCENTRAL_RANG = "magcentral";
     public static final String DG_RANG = "dg";
-    
+
     public static final String MAGASIN = "PHARM005";
     public static final String Devise = "AR";
 }
