@@ -12,13 +12,14 @@ const error = ref<string | null>(null)
 const fabrication = ref<any | null>(null)
 const details = ref<any[]>([])
 const mouvements = ref<any[]>([])
+const charges = ref<any[]>([])
 const activeTab = ref('details')
 
 const tabs = [
   { id: 'details', label: 'Détails' },
   { id: 'mouvements', label: 'Mouvement de stock' },
   { id: 'recette', label: 'Recette & Reviens' },
-  // { id: 'charges', label: 'Charges rattachées' },
+  { id: 'charges', label: 'Charges rattachées' },
   // { id: 'rapprochement', label: 'Rapprochement' },
   // { id: 'historique', label: 'Historique' }
 ]
@@ -149,6 +150,27 @@ const fetchMouvements = async () => {
   }
 }
 
+const fetchCharges = async () => {
+  const id = route.params.id as string
+  try {
+    const resp = await axios.get('/ChargeServlet', {
+      params: { action: 'listByFabrication', idFabrication: id }
+    })
+    let payload: any = resp.data
+    if (typeof resp.data === 'string') {
+      try { payload = JSON.parse(resp.data) } catch (e) {
+        const raw = resp.data as string, start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) { payload = JSON.parse(raw.substring(start, end + 1)) } else { throw e }
+      }
+    }
+    if (payload.status === 'success') {
+      charges.value = payload.data || []
+    }
+  } catch (err) {
+    console.error('Erreur chargement charges:', err)
+  }
+}
+
 const selectTab = async (tabId: string) => {
   if (tabId === 'recette') {
     // Charger les mouvements si nécessaire et rediriger vers le mouvement de sortie
@@ -166,6 +188,11 @@ const selectTab = async (tabId: string) => {
     }
     return;
   }
+  if (tabId === 'charges') {
+    if (charges.value.length === 0) {
+      await fetchCharges()
+    }
+  }
   activeTab.value = tabId
 }
 
@@ -174,8 +201,12 @@ watch(activeTab, (newTab) => {
     fetchDetails();
   } else if (newTab === 'mouvements') {
     // Toujours rafraîchir les mouvements quand on clique sur l'onglet
-    // pour voir les changements après une validation.
-    fetchMouvements();
+      // pour voir les changements après une validation.
+      fetchMouvements();
+  } else if (newTab === 'charges') {
+    if (charges.value.length === 0) {
+      fetchCharges()
+    }
   }
 });
 
@@ -385,6 +416,65 @@ onMounted(async () => {
                     </tr>
                   </tbody>
                 </table>
+              </div>
+
+              <!-- Onglet Charges rattachées -->
+              <div v-else-if="activeTab === 'charges'" key="charges" class="space-y-4">
+                <div class="flex items-center justify-between mb-2">
+                  <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Charges rattachées</h2>
+                  <a
+                    v-if="fabrication && fabrication.id"
+                    :href="`http://localhost:8080/socobis/pages/module.jsp?but=fabrication/charge/charge-saisie.jsp&id=${fabrication.id}`"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="inline-flex items-center px-4 py-2 text-xs font-bold rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm"
+                  >
+                    Saisir une charge (ERP)
+                  </a>
+                </div>
+
+                <div class="overflow-x-auto">
+                  <table class="min-w-full divide-y divide-slate-200">
+                    <thead>
+                      <tr class="bg-slate-50">
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type de charge</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Quantité</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">P.U.</th>
+                        <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
+                        <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">État</th>
+                      </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-slate-100">
+                      <tr
+                        v-for="(c, idx) in charges"
+                        :key="c.id || idx"
+                        class="hover:bg-slate-50/80 transition-colors"
+                      >
+                        <td class="px-4 py-3 whitespace-nowrap text-xs font-mono text-slate-500">{{ c.id }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ formatDate(c.daty) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-900">{{ c.libelle }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ c.typelib }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ c.qte }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-slate-600">{{ formatCurrency(c.pu) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ formatCurrency(c.montant) }}</td>
+                        <td class="px-4 py-3 whitespace-nowrap text-xs font-semibold text-slate-600">{{ c.etatlib }}</td>
+                      </tr>
+                      <tr v-if="charges.length === 0">
+                        <td colspan="8" class="px-4 py-12 text-center">
+                          <div class="flex flex-col items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-slate-200 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            <p class="text-slate-400 font-medium italic">Aucune charge rattachée pour cette fabrication.</p>
+                          </div>
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </transition>
           </div>
