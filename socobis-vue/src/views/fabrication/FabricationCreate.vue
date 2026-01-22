@@ -25,8 +25,8 @@ const form = ref({
   ordreDeFab: (route.query.idOffille as string) || '',
   filles: [
     {
-      idIngredients: 'ING000T0129',
-      qte: 75600,
+      idIngredients: 'IG000448',
+      qte: 1,
       idunite: 'UNT001',
       idMachine: 'MACHN000004',
       libelle: 'Test Creation Neuve',
