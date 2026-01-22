@@ -43,61 +43,88 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
-    <div class="sm:mx-auto sm:w-full sm:max-w-md">
-      <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-        Connexion à SOCOBIS
-      </h2>
-    </div>
+  <div class="min-h-screen bg-[#0f172a] flex items-center justify-center p-6">
+    <div class="w-full max-w-md">
+      <!-- Logo / Title -->
+      <div class="text-center mb-10">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-indigo-500 rounded-2xl shadow-xl shadow-indigo-500/20 mb-4">
+          <span class="text-2xl font-bold text-white">S</span>
+        </div>
+        <h2 class="text-3xl font-bold text-white tracking-tight">SOCOBIS ERP</h2>
+        <p class="text-slate-400 mt-2">Connectez-vous pour accéder à votre espace de gestion.</p>
+      </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-      <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+      <!-- Login Card -->
+      <div class="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl shadow-2xl">
         <form class="space-y-6" @submit.prevent="handleLogin">
-          <div v-if="error" class="bg-red-50 p-4 rounded-md">
-            <p class="text-sm text-red-700">{{ error }}</p>
+          <div v-if="error" class="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl">
+            <p class="text-sm text-red-400 text-center font-medium">{{ error }}</p>
           </div>
 
-          <div>
-            <label for="identifiant" class="block text-sm font-medium text-gray-700">
+          <div class="space-y-2">
+            <label for="identifiant" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
               Identifiant
             </label>
-            <div class="mt-1">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </div>
               <input
                 v-model="form.identifiant"
                 id="identifiant"
-                name="identifiant"
                 type="text"
                 required
                 readonly
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 cursor-not-allowed sm:text-sm"
+                class="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all cursor-not-allowed"
+                placeholder="Votre identifiant"
               >
             </div>
           </div>
 
-          <div>
-            <label for="passe" class="block text-sm font-medium text-gray-700">
+          <div class="space-y-2">
+            <label for="passe" class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">
               Mot de passe
             </label>
-            <div class="mt-1">
+            <div class="relative group">
+              <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-indigo-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 00-2 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                </svg>
+              </div>
               <input
                 v-model="form.passe"
                 id="passe"
-                name="passe"
                 type="password"
                 required
                 readonly
-                class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm bg-gray-100 text-gray-700 cursor-not-allowed sm:text-sm"
+                class="w-full pl-11 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 outline-none transition-all cursor-not-allowed"
+                placeholder="••••••••"
               >
             </div>
           </div>
 
-          <div>
-            <button type="submit" :disabled="loading" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              {{ loading ? 'Connexion en cours...' : 'Se connecter' }}
-            </button>
-          </div>
+          <button 
+            type="submit" 
+            :disabled="loading" 
+            class="w-full py-4 px-6 bg-indigo-600 hover:bg-indigo-700 text-white rounded-2xl font-bold shadow-lg shadow-indigo-600/30 transition-all duration-200 transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="loading" class="flex items-center justify-center">
+              <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Chargement...
+            </span>
+            <span v-else>Se connecter</span>
+          </button>
         </form>
       </div>
+      
+      <p class="text-center text-slate-500 text-sm mt-8">
+        © 2026 SOCOBIS. Tous droits réservés.
+      </p>
     </div>
   </div>
 </template>

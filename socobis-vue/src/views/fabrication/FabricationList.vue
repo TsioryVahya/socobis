@@ -8,17 +8,17 @@ const fabrications = ref<any[]>([])
 const loading = ref(true)
 const error = ref<string | null>(null)
 const total = ref(0)
+const showAdvanced = ref(false)
 
 // Filtres de recherche
-// etatTable correspond aux vues FABRICATIONCPL* comme dans la JSP ERP
 const filters = ref({
   id: '',
   lancePar: '',
   cible: '',
   remarque: '',
   libelle: '',
-  datyMin: new Date().toISOString().split('T')[0],
-  datyMax: new Date().toISOString().split('T')[0],
+  datyMin: '',
+  datyMax: '',
   idOf: '',
   idOffille: '',
   etatTable: 'FABRICATIONCPL'
@@ -114,142 +114,145 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-    <div class="px-4 py-6 sm:px-0">
-      <div class="flex justify-between items-center mb-6">
-        <h1 class="text-2xl font-semibold text-gray-900">Liste des Fabrications</h1>
-        <router-link to="/fabrications/nouveau" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700">
-          Nouvelle Fabrication
-        </router-link>
+  <div class="space-y-6">
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Liste des Fabrications</h1>
+        <p class="text-slate-500 text-sm mt-1">Gérez et suivez l'état de vos opérations de fabrication.</p>
       </div>
+      <router-link to="/fabrications/nouveau" class="inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-lg shadow-indigo-600/20 hover:bg-indigo-700 transition-all duration-200">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Nouvelle Fabrication
+      </router-link>
+    </div>
 
-      <!-- Filtres de recherche -->
-      <div class="bg-white shadow sm:rounded-lg mb-6 p-4">
-        <h2 class="text-lg font-medium text-gray-900 mb-4 border-b pb-2">Filtre de recherche</h2>
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <!-- Filtres -->
+    <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
+      <div class="flex flex-col gap-6">
+        <!-- Filtres de base -->
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">id</label>
-            <input v-model="filters.id" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ID Fabrication</label>
+            <input v-model="filters.id" type="text" placeholder="Ex: FAB0001" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">Lancée par</label>
-            <input v-model="filters.lancePar" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Date Début</label>
+            <input v-model="filters.datyMin" type="date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">cible</label>
-            <input v-model="filters.cible" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Date Fin</label>
+            <input v-model="filters.datyMax" type="date" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+          </div>
+          <div class="flex items-end gap-2">
+            <button @click="fetchFabrications" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-all shadow-md shadow-indigo-600/20">
+              Rechercher
+            </button>
+            <button @click="showAdvanced = !showAdvanced" class="p-2 bg-slate-100 text-slate-600 rounded-xl hover:bg-slate-200 transition-all" title="Plus de filtres">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 transform transition-transform duration-200" :class="{'rotate-180': showAdvanced}" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Filtres Avancés -->
+        <div v-if="showAdvanced" class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4 pt-4 border-t border-slate-100 animate-fadeIn">
+          <div>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Lancé Par</label>
+            <input v-model="filters.lancePar" type="text" placeholder="Utilisateur..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">remarque</label>
-            <input v-model="filters.remarque" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Cible</label>
+            <input v-model="filters.cible" type="text" placeholder="Machine / Atelier..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">libelle</label>
-            <input v-model="filters.libelle" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Libellé</label>
+            <input v-model="filters.libelle" type="text" placeholder="Mots clés..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">Date min</label>
-            <input v-model="filters.datyMin" type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Remarque</label>
+            <input v-model="filters.remarque" type="text" placeholder="Contenu remarque..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">Date max</label>
-            <input v-model="filters.datyMax" type="date" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ID OF</label>
+            <input v-model="filters.idOf" type="text" placeholder="OF Principal..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">Id Ordre de fabrication</label>
-            <input v-model="filters.idOf" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">ID OF Fille</label>
+            <input v-model="filters.idOffille" type="text" placeholder="Sous-OF..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
           </div>
           <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">Id Ordre de fabrication fille</label>
-            <input v-model="filters.idOffille" type="text" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500" />
-          </div>
-          <div>
-            <label class="block text-xs font-medium text-gray-700 uppercase">État</label>
-            <select v-model="filters.etatTable" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-1 px-2 text-sm focus:ring-green-500 focus:border-green-500">
-              <option value="FABRICATIONCPL">Tous</option>
-              <option value="FABRICATIONCPLCREE">Créée(s)</option>
-              <option value="FABRICATIONCPLVISEE">Validée(s)</option>
-              <option value="FABRICATIONCPLANNULE">Annulée(s)</option>
-              <option value="FABRICATIONCPLENTAMEE">Entamée(s)</option>
-              <option value="FABRICATIONCPLBLOQUEE">Bloquée(s)</option>
-              <option value="FABRICATIONCPLBTERMINEE">Terminée(s)</option>
+            <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Vue / État</label>
+            <select v-model="filters.etatTable" class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+              <option value="FABRICATIONCPL">Toutes les fabrications</option>
+              <option value="FABRICATIONCPLVALIDE">Validées</option>
+              <option value="FABRICATIONCPLNONVALIDE">Non Validées</option>
+              <option value="FABRICATIONCPLANNULE">Annulées</option>
             </select>
           </div>
-          <div class="md:col-span-4 flex justify-end space-x-2">
-            <button @click="fetchFabrications" class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-              Rechercher
+          <div class="flex items-end">
+            <button @click="Object.keys(filters).forEach(k => k !== 'etatTable' ? filters[k] = '' : null)" class="w-full px-4 py-2 bg-slate-200 text-slate-700 rounded-xl font-semibold hover:bg-slate-300 transition-all">
+              Réinitialiser
             </button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Récapitulation -->
-      <div class="bg-gray-50 border border-gray-200 rounded-md mb-6 p-3 flex justify-between items-center">
-        <div class="text-sm font-medium text-gray-700">
-          Récapitulation
-        </div>
-        <div class="flex space-x-4 text-sm">
-          <span class="text-gray-600">Nombre : <span class="font-bold text-gray-900">{{ fabrications.length }}</span></span>
-          <span class="text-gray-600">Total : <span class="font-bold text-gray-900">{{ total }}</span></span>
-        </div>
-      </div>
-
-      <div v-if="loading" class="text-center py-10">
-        <p class="text-gray-500">Chargement...</p>
-      </div>
-
-      <div v-else-if="error" class="bg-red-50 p-4 rounded-md">
-        <p class="text-red-700">{{ error }}</p>
-      </div>
-
-      <div v-else class="flex flex-col">
-        <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-          <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
-            <div class="shadow overflow-hidden border-b border-gray-200 sm:rounded-lg">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">ID</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Lancée par</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Cible</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Remarque</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Désignation</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Date</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Id ordre de fab</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">Id Ordre fab fille</th>
-                    <th scope="col" class="px-4 py-2 text-left text-xs font-bold text-gray-500 uppercase">État</th>
-                  </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                  <tr v-for="(f, index) in fabrications" :key="f.id || index" class="hover:bg-gray-50">
-                    <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-blue-600">
-                      <router-link :to="`/fabrications/${f.id}`" class="hover:underline">+{{ f.id }}</router-link>
-                    </td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.lancePar }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.cible }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.remarque }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.libelle }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.daty }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.idOf || '' }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-700">{{ f.idOffille || '' }}</td>
-                    <td class="px-4 py-2 whitespace-nowrap text-sm">
-                      <span :class="{
-                        'px-2 py-1 text-xs rounded-full': true,
+    <!-- Table -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+      <div class="overflow-x-auto">
+        <table class="w-full text-left">
+          <thead>
+            <tr class="bg-slate-50 border-b border-slate-200">
+              <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">ID / Date</th>
+              <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Libellé / Remarque</th>
+              <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Lancé / Cible</th>
+              <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">État</th>
+              <th class="px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-slate-100">
+            <tr v-if="loading" class="animate-pulse">
+              <td colspan="5" class="px-6 py-10 text-center text-slate-400">Chargement...</td>
+            </tr>
+            <tr v-else-if="fabrications.length === 0" class="text-center">
+              <td colspan="5" class="px-6 py-10 text-slate-400">Aucune fabrication trouvée</td>
+            </tr>
+            <tr v-for="f in fabrications" :key="f.id" class="hover:bg-slate-50 transition-colors">
+              <td class="px-6 py-4">
+                <div class="text-sm font-bold text-slate-800">{{ f.id }}</div>
+                <div class="text-xs text-slate-500">{{ f.daty }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm font-medium text-slate-800">{{ f.libelle }}</div>
+                <div class="text-xs text-slate-500 truncate max-w-xs">{{ f.remarque }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <div class="text-sm text-slate-700"><span class="font-medium">Par:</span> {{ f.lancePar }}</div>
+                <div class="text-sm text-slate-700"><span class="font-medium">Cible:</span> {{ f.cible }}</div>
+              </td>
+              <td class="px-6 py-4">
+                <span class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-tighter" :class="{
                         'bg-blue-100 text-blue-800': f.etat == 1,
                         'bg-green-100 text-green-800': f.etat == 10 || f.etat == 11
                       }">
-                        {{ getStatusLabel(f.etatLib) }}
-                      </span>
-                    </td>
-                  </tr>
-                  <tr v-if="fabrications.length === 0">
-                    <td colspan="9" class="px-4 py-10 text-center text-sm text-gray-500">Aucune fabrication trouvée</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
+                  {{ getStatusLabel(f.etatLib) }}
+                </span>
+              </td>
+              <td class="px-6 py-4 text-right">
+                <button @click="router.push(`/fabrications/${f.id}`)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>
