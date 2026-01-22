@@ -49,13 +49,33 @@ public class OfServlet extends HttpServlet {
                 // Utiliser la même vue que les JSP de liste (OFABLIB)
                 critere.setNomTable("OFABLIB");
 
-                // Même logique de critères que ordre-fabrication-liste.jsp
-                String[] listeCrt = {"id", "lancepar", "cible", "remarque", "libelle", "besoin", "daty"};
-                String[] listeInt = {"daty", "besoin"};
+                // Critères texte (le framework va construire le WHERE via makeWhere)
+                if (request.getParameter("id") != null) critere.setId(request.getParameter("id"));
+                if (request.getParameter("lancepar") != null) critere.setLancePar(request.getParameter("lancepar"));
+                if (request.getParameter("cible") != null) critere.setCible(request.getParameter("cible"));
+                if (request.getParameter("remarque") != null) critere.setRemarque(request.getParameter("remarque"));
+                if (request.getParameter("libelle") != null) critere.setLibelle(request.getParameter("libelle"));
+
+                // Intervalles date (daty1/daty2, besoin1/besoin2)
+                String daty1 = request.getParameter("daty1");
+                String daty2 = request.getParameter("daty2");
+                String besoin1 = request.getParameter("besoin1");
+                String besoin2 = request.getParameter("besoin2");
+
+                String[] colInt = null;
+                String[] valInt = null;
+                if ((daty1 != null && !daty1.trim().isEmpty()) || (daty2 != null && !daty2.trim().isEmpty())
+                        || (besoin1 != null && !besoin1.trim().isEmpty()) || (besoin2 != null && !besoin2.trim().isEmpty())) {
+                    colInt = new String[] { "daty", "besoin" };
+                    valInt = new String[] {
+                            daty1 != null ? daty1 : "", daty2 != null ? daty2 : "",
+                            besoin1 != null ? besoin1 : "", besoin2 != null ? besoin2 : ""
+                    };
+                }
 
                 Connection c = new UtilDB().GetConn();
                 try {
-                    Object[] list = u.getData(critere, request, listeCrt, listeInt, c, "");
+                    Object[] list = u.getData(critere, colInt, valInt, c, "");
                     res.put("status", "success");
                     res.put("count", list != null ? list.length : 0);
                     res.put("data", list);

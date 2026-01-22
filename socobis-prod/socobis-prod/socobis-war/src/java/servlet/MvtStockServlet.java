@@ -24,18 +24,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet("/MvtStockServlet")
+@WebServlet(name = "MvtStockServlet", urlPatterns = {"/MvtStockServlet/*"})
 public class MvtStockServlet extends HttpServlet {
 
     private static final Gson gson = new Gson();
 
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        doPost(request, response);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void processRequest(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         response.setContentType("application/json");
         response.setCharacterEncoding("UTF-8");
         PrintWriter out = response.getWriter();
@@ -49,6 +44,7 @@ public class MvtStockServlet extends HttpServlet {
             }
 
             String action = request.getParameter("action");
+            System.out.println("MvtStockServlet: action=" + action + ", id=" + request.getParameter("id"));
             if ("prepareFromFab".equalsIgnoreCase(action)) {
                 handlePrepareFromFab(request, res);
             } else if ("saveFromFab".equalsIgnoreCase(action)) {
@@ -69,7 +65,21 @@ public class MvtStockServlet extends HttpServlet {
             }
         } finally {
             out.print(gson.toJson(res));
+            out.flush();
+            out.close();
         }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        processRequest(request, response);
     }
 
     private void handlePrepareFromFab(HttpServletRequest request, Map<String, Object> res) throws Exception {
