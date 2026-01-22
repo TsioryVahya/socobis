@@ -7,6 +7,7 @@ import FabricationList from '../views/fabrication/FabricationList.vue'
 import FabricationCreate from '../views/fabrication/FabricationCreate.vue'
 import FabricationDetail from '../views/fabrication/FabricationDetail.vue'
 import FabricationMvtStock from '../views/fabrication/FabricationMvtStock.vue'
+import FabricationCharge from '../views/fabrication/FabricationCharge.vue'
 import OfList from '../views/fabrication/OfList.vue'
 import OfCreate from '../views/fabrication/OfCreate.vue'
 import MvtStockDetail from '../views/stock/MvtStockDetail.vue'
@@ -29,6 +30,12 @@ const routes = [
     path: '/fabrications/:id/mvt-stock/:type',
     name: 'FabricationMvtStock',
     component: FabricationMvtStock,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/fabrications/:id/charges/saisie',
+    name: 'FabricationCharge',
+    component: FabricationCharge,
     meta: { requiresAuth: true }
   },
   { path: '/ofs', component: OfList },

@@ -12,12 +12,13 @@ const error = ref<string | null>(null)
 const fabrication = ref<any | null>(null)
 const details = ref<any[]>([])
 const mouvements = ref<any[]>([])
+const charges = ref<any[]>([])
 const activeTab = ref('details')
 
 const tabs = [
   { id: 'details', label: 'Détails' },
   { id: 'mouvements', label: 'Mouvement de stock' },
-  // { id: 'charges', label: 'Charges rattachées' },
+  { id: 'charges', label: 'Charges rattachées' },
   // { id: 'rapprochement', label: 'Rapprochement' },
   // { id: 'historique', label: 'Historique' }
 ]
@@ -79,6 +80,25 @@ const handleValidate = async () => {
     error.value = "Erreur lors de la validation de la fabrication"
   } finally {
     loading.value = false
+  }
+}
+
+const fetchCharges = async () => {
+  const idFab = route.params.id as string
+  try {
+    const resp = await axios.get('/ChargeServlet', { params: { action: 'listByFab', idFab } })
+    let payload: any = resp.data
+    if (typeof resp.data === 'string') {
+      try { payload = JSON.parse(resp.data) } catch (e) {
+        const raw = resp.data as string, start = raw.indexOf('{'), end = raw.lastIndexOf('}');
+        if (start !== -1 && end !== -1 && end > start) { payload = JSON.parse(raw.substring(start, end + 1)) } else { throw e }
+      }
+    }
+    if (payload.status === 'success') {
+      charges.value = payload.data || []
+    }
+  } catch (err) {
+    console.error('Erreur chargement charges:', err)
   }
 }
 
@@ -159,6 +179,8 @@ watch(activeTab, (newTab) => {
     // Toujours rafraîchir les mouvements quand on clique sur l'onglet
     // pour voir les changements après une validation.
     fetchMouvements();
+  } else if (newTab === 'charges') {
+    fetchCharges();
   }
 });
 
@@ -171,6 +193,8 @@ onMounted(async () => {
       await fetchDetails()
     } else if (activeTab.value === 'mouvements') {
       await fetchMouvements()
+    } else if (activeTab.value === 'charges') {
+      await fetchCharges()
     }
   }
   loading.value = false
@@ -204,6 +228,13 @@ onMounted(async () => {
             }">
               {{ getStatusLabel(fabrication.etat) }}
             </span>
+
+            <button
+              @click="router.push({ name: 'FabricationCharge', params: { id: fabrication.id } })"
+              class="hidden sm:inline-flex items-center px-4 py-2 text-sm font-bold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 transition-all active:scale-95 shadow-sm"
+            >
+              Saisir charge
+            </button>
           </div>
         </div>
       </div>
@@ -364,6 +395,54 @@ onMounted(async () => {
                           </svg>
                           <p class="text-slate-400 font-medium italic">Aucun mouvement de stock pour cette fabrication.</p>
                         </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- Onglet Charges -->
+              <div v-else-if="activeTab === 'charges'" key="charges" class="overflow-x-auto">
+                <div class="flex justify-end pb-4">
+                  <button
+                    @click="router.push({ name: 'FabricationCharge', params: { id: fabrication.id } })"
+                    class="inline-flex items-center px-5 py-2 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition-all active:scale-95 shadow-sm"
+                  >
+                    Saisir charge
+                  </button>
+                </div>
+
+                <table class="min-w-full divide-y divide-slate-200">
+                  <thead>
+                    <tr class="bg-slate-50">
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">ID</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Date</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Libellé</th>
+                      <th class="px-4 py-3 text-left text-xs font-bold text-slate-500 uppercase tracking-wider">Type</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Qté</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">P.U.</th>
+                      <th class="px-4 py-3 text-right text-xs font-bold text-slate-500 uppercase tracking-wider">Montant</th>
+                      <th class="px-4 py-3 text-center text-xs font-bold text-slate-500 uppercase tracking-wider">État</th>
+                    </tr>
+                  </thead>
+                  <tbody class="bg-white divide-y divide-slate-100">
+                    <tr v-for="(c, idx) in charges" :key="c.id || idx" class="hover:bg-slate-50/80 transition-colors">
+                      <td class="px-4 py-3 whitespace-nowrap text-xs font-mono font-bold text-slate-700">#{{ c.id }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ formatDate(c.daty) }}</td>
+                      <td class="px-4 py-3 text-sm font-medium text-slate-900">{{ c.libelle }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-slate-600">{{ c.typelib }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ c.qte }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right text-slate-600">{{ formatCurrency(c.pu) }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-sm text-right font-bold text-slate-900">{{ formatCurrency(c.montant) }}</td>
+                      <td class="px-4 py-3 whitespace-nowrap text-center">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600 border border-slate-200">
+                          {{ c.etatlib || c.etat }}
+                        </span>
+                      </td>
+                    </tr>
+                    <tr v-if="charges.length === 0">
+                      <td colspan="8" class="px-4 py-12 text-center">
+                        <p class="text-slate-400 font-medium italic">Aucune charge rattachée pour cette fabrication.</p>
                       </td>
                     </tr>
                   </tbody>
