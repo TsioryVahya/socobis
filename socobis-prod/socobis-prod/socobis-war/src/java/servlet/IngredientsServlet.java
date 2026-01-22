@@ -25,8 +25,15 @@ public class IngredientsServlet extends HttpServlet {
         try {
             c = new UtilDB().GetConn();
 
+            String query = req.getParameter("q");
+            String where = "";
+            if (query != null && !query.trim().isEmpty()) {
+                query = query.trim().toUpperCase();
+                where = " AND (UPPER(id) LIKE '%" + query + "%' OR UPPER(libelle) LIKE '%" + query + "%')";
+            }
+
             IngredientsLib ing = new IngredientsLib();
-            IngredientsLib[] results = (IngredientsLib[]) CGenUtil.rechercher(ing, null, null, c, "");
+            IngredientsLib[] results = (IngredientsLib[]) CGenUtil.rechercher(ing, null, null, c, where);
 
             List<Map<String, Object>> data = new ArrayList<>();
             if (results != null) {
@@ -48,7 +55,10 @@ public class IngredientsServlet extends HttpServlet {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
         } finally {
             if (c != null) {
-                try { c.close(); } catch (Exception ignore) {}
+                try {
+                    c.close();
+                } catch (Exception ignore) {
+                }
             }
         }
     }

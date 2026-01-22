@@ -11,6 +11,7 @@ import OfList from '../views/fabrication/OfList.vue'
 import OfCreate from '../views/fabrication/OfCreate.vue'
 import MvtStockDetail from '../views/stock/MvtStockDetail.vue'
 import IngredientDetail from '../views/produits/IngredientDetail.vue'
+import ChargeSaisie from '../views/fabrication/ChargeSaisie.vue'
 
 const routes = [
   { path: '/login', component: Login, meta: { public: true } },
@@ -29,6 +30,12 @@ const routes = [
     path: '/fabrications/:id/mvt-stock/:type',
     name: 'FabricationMvtStock',
     component: FabricationMvtStock,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/fabrications/:id/charges/saisie',
+    name: 'ChargeSaisie',
+    component: ChargeSaisie,
     meta: { requiresAuth: true }
   },
   { path: '/ofs', component: OfList },
@@ -60,7 +67,7 @@ const router = createRouter({
 
 router.beforeEach((to, _from, next) => {
   const isAuthenticated = localStorage.getItem('user') !== null
-  
+
   if (!to.meta.public && !isAuthenticated) {
     next('/login')
   } else {

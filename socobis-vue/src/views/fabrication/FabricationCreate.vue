@@ -13,7 +13,6 @@ const magasins = ref<Array<{ id: string; libelle: string }>>([])
 const bonsDeCommande = ref<Array<{ id: string; designation: string; client?: string; reference?: string }>>([])
 const ingredients = ref<Array<{ id: string; libelle: string; unite?: string }>>([])
 const ofFilles = ref<Array<{ id: string; libelle: string }>>([])
-const machines = ref<Array<{ id: string; libelle: string }>>([])
 
 const form = ref({
   daty: new Date().toISOString().split('T')[0],
@@ -29,7 +28,7 @@ const form = ref({
       idIngredients: 'ING000T0129',
       qte: 75600,
       idunite: 'UNT001',
-      idMachine: '',
+      idMachine: 'MACHN000004',
       libelle: 'Test Creation Neuve',
       remarque: '',
       idBcFille: ''
@@ -44,7 +43,7 @@ const addFille = () => {
     idIngredients: '',
     qte: 0,
     idunite: 'UNT001',
-    idMachine: '',
+    idMachine: 'MACHN000004',
     libelle: form.value.libelle,
     remarque: '',
     idBcFille: ''
@@ -119,14 +118,6 @@ onMounted(async () => {
     ingredients.value = ingResponse.data || []
     const ofResponse = await axios.get('/OfFilleServlet')
     ofFilles.value = ofResponse.data || []
-    // Récupération des machines pour la liste déroulante (équivalent JSP fabrication-saisie)
-    const machResponse = await axios.get('/MachineServlet')
-    if (machResponse.data && machResponse.data.status === 'success') {
-      machines.value = machResponse.data.data || []
-    } else if (Array.isArray(machResponse.data)) {
-      // fallback si l'API renvoie directement un tableau
-      machines.value = machResponse.data
-    }
   } catch (e) {
     console.error(e)
   }
@@ -134,269 +125,202 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="content-wrapper py-4 px-2 sm:px-4">
-    <h1 class="box-title text-xl font-semibold mb-4">
-      Nouvelle fabrication
-    </h1>
+  <div class="space-y-6 max-w-5xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-800">Nouvelle Fabrication</h1>
+        <p class="text-slate-500 text-sm mt-1">Créez un nouvel ordre de fabrication et gérez ses composants.</p>
+      </div>
+      <button @click="router.back()" class="inline-flex items-center px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-xl font-semibold transition-all">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+        </svg>
+        Retour
+      </button>
+    </div>
 
-    <div class="row m-0">
-      <div class="col-md-3"></div>
-      <div class="col-md-6">
-        <div class="box box-fiche shadow-sm border border-gray-200 rounded-md bg-white">
-          <form @submit.prevent="submitForm">
-            <div class="box-body px-4 py-4 space-y-4">
-              <p class="text-sm text-gray-600 mb-2">
-                Lancer un nouvel ordre de fabrication (OF).
-              </p>
+    <form @submit.prevent="submitForm" class="space-y-6">
+      <!-- Status Messages -->
+      <div v-if="error" class="bg-red-500/10 border border-red-500/20 p-4 rounded-2xl animate-shake">
+        <p class="text-sm text-red-600 font-medium text-center">{{ error }}</p>
+      </div>
+      <div v-if="success" class="bg-emerald-500/10 border border-emerald-500/20 p-4 rounded-2xl">
+        <p class="text-sm text-emerald-600 font-medium text-center">{{ success }}</p>
+      </div>
 
-              <div v-if="error" class="bg-red-50 p-4 rounded-md">
-                <p class="text-sm text-red-700">{{ error }}</p>
-              </div>
-              <div v-if="success" class="bg-green-50 p-4 rounded-md">
-                <p class="text-sm text-green-700">{{ success }}</p>
-              </div>
-
-              <div class="grid grid-cols-6 gap-4">
-                <!-- Informations Générales -->
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Date</label>
-                  <input
-                    v-model="form.daty"
-                    type="date"
-                    required
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
+      <!-- Main Form Card -->
+      <div class="bg-white rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-6 md:p-8">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Left Column: Basics -->
+            <div class="space-y-6">
+              <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                <span class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-sm">01</span>
+                Informations Générales
+              </h3>
+              
+              <div class="grid grid-cols-1 gap-4">
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Date de fabrication</label>
+                  <input v-model="form.daty" type="date" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
                 </div>
 
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Lancé par</label>
-                  <select
-                    v-model="form.lancePar"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option disabled value="">Sélectionner un magasin</option>
-                    <option
-                      v-for="magasin in magasins"
-                      :key="magasin.id"
-                      :value="magasin.id"
-                    >
-                      {{ magasin.libelle }}
-                    </option>
-                  </select>
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Désignation / Libellé</label>
+                  <input v-model="form.libelle" type="text" required placeholder="Nom de l'opération" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
                 </div>
 
-                <div class="col-span-6">
-                  <label class="block text-sm font-medium text-gray-700">Remarque</label>
-                  <input
-                    v-model="form.remarque"
-                    type="text"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                </div>
-
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Cible</label>
-                  <select
-                    v-model="form.cible"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  >
-                    <option disabled value="">Sélectionner un magasin</option>
-                    <option
-                      v-for="magasin in magasins"
-                      :key="'cible-' + magasin.id"
-                      :value="magasin.id"
-                    >
-                      {{ magasin.libelle }}
-                    </option>
-                  </select>
-                </div>
-
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Équipe</label>
-                  <input
-                    v-model="form.equipe"
-                    type="text"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                </div>
-
-                <div class="col-span-6">
-                  <label class="block text-sm font-medium text-gray-700">Désignation</label>
-                  <input
-                    v-model="form.libelle"
-                    type="text"
-                    required
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                </div>
-
-                <!-- Références -->
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Bon de commande associé</label>
-                  <input
-                    v-model="form.idBonDeCommande"
-                    list="bons-de-commande-list"
-                    type="text"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                  <datalist id="bons-de-commande-list">
-                    <option
-                      v-for="bc in bonsDeCommande"
-                      :key="bc.id"
-                      :value="bc.id"
-                    >
-                      {{ bc.id }} - {{ bc.designation }}<span v-if="bc.client"> ({{ bc.client }})</span>
-                    </option>
-                  </datalist>
-                </div>
-
-                <div class="col-span-6 sm:col-span-3">
-                  <label class="block text-sm font-medium text-gray-700">Ordre de fabrication associé</label>
-                  <input
-                    v-model="form.ordreDeFab"
-                    list="of-filles-list"
-                    type="text"
-                    class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                  >
-                  <datalist id="of-filles-list">
-                    <option
-                      v-for="of in ofFilles"
-                      :key="of.id"
-                      :value="of.id"
-                    >
-                      {{ of.id }} - {{ of.libelle }}
-                    </option>
-                  </datalist>
-                </div>
-
-                <!-- Produits / Ingrédients Filles -->
-                <div class="col-span-6">
-                  <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-md font-medium text-gray-900">Composants</h4>
-                    <button type="button" @click="addFille" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-green-700 bg-green-100 hover:bg-green-200">
-                      + Ajouter un produit
-                    </button>
-                  </div>
-
-                  <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700">Entrez le chemin de votre fichier Excel</label>
-                    <input
-                      type="file"
-                      class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  
-                  <datalist id="ingredients-list">
-                    <option
-                      v-for="ing in ingredients"
-                      :key="ing.id"
-                      :value="ing.id"
-                    >
-                      {{ ing.id }} - {{ ing.libelle }}<span v-if="ing.unite"> ({{ ing.unite }})</span>
-                    </option>
-                  </datalist>
-
-                  <div v-for="(fille, index) in form.filles" :key="index" class="p-4 border border-gray-200 rounded-md mb-4 bg-gray-50">
-                    <div class="grid grid-cols-6 gap-4">
-                      <div class="col-span-6 sm:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700">Composants</label>
-                        <input
-                          v-model="fille.idIngredients"
-                          list="ingredients-list"
-                          type="text"
-                          required
-                          @change="handleIngredientChange(index)"
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-3">
-                        <label class="block text-sm font-medium text-gray-700">Remarque</label>
-                        <input
-                          v-model="fille.remarque"
-                          type="text"
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Unité</label>
-                        <input
-                          v-model="fille.idunite"
-                          type="text"
-                          required
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Bon de commande fille</label>
-                        <input
-                          v-model="fille.idBcFille"
-                          type="text"
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Machine</label>
-                        <select
-                          v-model="fille.idMachine"
-                          required
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white pl-3 pr-10 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                          <option disabled value="">Sélectionner une machine</option>
-                          <option
-                            v-for="machine in machines"
-                            :key="machine.id"
-                            :value="machine.id"
-                          >
-                            {{ machine.libelle }}
-                          </option>
-                        </select>
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700">Quantité</label>
-                        <input
-                          v-model.number="fille.qte"
-                          type="number"
-                          required
-                          class="mt-1 block w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                        >
-                      </div>
-
-                      <div class="col-span-6 sm:col-span-2 flex items-end justify-end">
-                        <button v-if="form.filles.length > 1" type="button" @click="removeFille(index)" class="text-red-600 hover:text-red-800 text-sm font-medium">
-                          Supprimer cette ligne
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Remarque</label>
+                  <textarea v-model="form.remarque" rows="2" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all resize-none"></textarea>
                 </div>
               </div>
             </div>
-            <div class="box-footer px-4 py-3 bg-gray-50 text-right space-x-3">
-              <button
-                type="button"
-                @click="router.back()"
-                class="btn btn-secondary inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-              >
-                Annuler
-              </button>
-              <button
-                type="submit"
-                :disabled="loading"
-                class="btn btn-primary inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-              >
-                {{ loading ? 'Lancement...' : 'Lancer la fabrication' }}
-              </button>
+
+            <!-- Right Column: Logistics -->
+            <div class="space-y-6">
+              <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                <span class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-sm">02</span>
+                Logistique & Équipe
+              </h3>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Lancé par</label>
+                  <select v-model="form.lancePar" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none">
+                    <option disabled value="">Magasin source</option>
+                    <option v-for="m in magasins" :key="m.id" :value="m.id">{{ m.libelle }}</option>
+                  </select>
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Magasin Cible</label>
+                  <select v-model="form.cible" required class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all appearance-none">
+                    <option disabled value="">Destination</option>
+                    <option v-for="m in magasins" :key="'c-'+m.id" :value="m.id">{{ m.libelle }}</option>
+                  </select>
+                </div>
+                <div class="space-y-2 sm:col-span-2">
+                  <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Équipe de production</label>
+                  <input v-model="form.equipe" type="text" placeholder="Ex: Équipe A" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                </div>
+              </div>
             </div>
-          </form>
+          </div>
+
+          <!-- Section: Références -->
+          <div class="mt-10 pt-10 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+             <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Bon de Commande Associé</label>
+                <input v-model="form.idBonDeCommande" list="bc-list" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                <datalist id="bc-list">
+                  <option v-for="bc in bonsDeCommande" :key="bc.id" :value="bc.id">{{ bc.id }} - {{ bc.designation }}</option>
+                </datalist>
+             </div>
+             <div class="space-y-2">
+                <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider ml-1">Ordre de Fabrication Associé</label>
+                <input v-model="form.ordreDeFab" list="of-list" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                <datalist id="of-list">
+                  <option v-for="of in ofFilles" :key="of.id" :value="of.id">{{ of.id }} - {{ of.libelle }}</option>
+                </datalist>
+             </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <!-- Section: Composants -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between px-2">
+          <h3 class="text-lg font-bold text-slate-800 flex items-center">
+            <span class="w-8 h-8 bg-indigo-100 text-indigo-600 rounded-lg flex items-center justify-center mr-3 text-sm">03</span>
+            Composants & Ingrédients
+          </h3>
+          <button type="button" @click="addFille" class="inline-flex items-center px-4 py-2 bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-500/20 hover:bg-emerald-600 transition-all">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            Ajouter une ligne
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div v-for="(fille, index) in form.filles" :key="index" class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 group hover:border-indigo-200 transition-all relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-1 h-full bg-slate-100 group-hover:bg-indigo-400 transition-colors"></div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6">
+              <!-- Composant -->
+              <div class="md:col-span-4 space-y-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Composant / Ingrédient</label>
+                <input v-model="fille.idIngredients" list="ing-list" @change="handleIngredientChange(index)" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+              </div>
+
+              <!-- Quantité & Unité -->
+              <div class="md:col-span-3 grid grid-cols-2 gap-3">
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Quantité</label>
+                  <input v-model.number="fille.qte" type="number" step="any" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Unité</label>
+                  <input v-model="fille.idunite" type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                </div>
+              </div>
+
+              <!-- Machine & BC Fille -->
+              <div class="md:col-span-4 grid grid-cols-2 gap-3">
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Machine</label>
+                  <input v-model="fille.idMachine" type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                </div>
+                <div class="space-y-2">
+                  <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">BC Fille</label>
+                  <input v-model="fille.idBcFille" type="text" class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all">
+                </div>
+              </div>
+
+              <!-- Delete Button -->
+              <div class="md:col-span-1 flex items-end justify-center">
+                <button v-if="form.filles.length > 1" type="button" @click="removeFille(index)" class="p-3 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Bottom Row: Remarque Fille -->
+              <div class="md:col-span-11 space-y-2">
+                <label class="block text-xs font-semibold text-slate-400 uppercase tracking-wider ml-1">Remarque spécifique</label>
+                <input v-model="fille.remarque" type="text" placeholder="Note pour ce composant..." class="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <datalist id="ing-list">
+          <option v-for="ing in ingredients" :key="ing.id" :value="ing.id">{{ ing.libelle }}</option>
+        </datalist>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex items-center justify-end space-x-4 pt-6">
+        <button type="button" @click="router.back()" class="px-8 py-4 text-slate-600 font-bold hover:bg-slate-100 rounded-2xl transition-all">
+          Annuler
+        </button>
+        <button 
+          type="submit" 
+          :disabled="loading" 
+          class="px-10 py-4 bg-indigo-600 text-white rounded-2xl font-bold shadow-xl shadow-indigo-600/30 hover:bg-indigo-700 transition-all transform active:scale-[0.98] disabled:opacity-50"
+        >
+          <span v-if="loading" class="flex items-center">
+            <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Traitement...
+          </span>
+          <span v-else>Lancer la Fabrication</span>
+        </button>
+      </div>
+    </form>
   </div>
 </template>

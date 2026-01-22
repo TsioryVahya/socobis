@@ -118,7 +118,10 @@ public class Charge extends  ClassEtat{
 
     @Override
     public ClassMAPTable createObject(MapUtilisateur u, Connection c)throws Exception{
-        if((u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0)&&(u.getIdrole().compareTo(ConstanteSocobis.CONTREMAITRE_RANG) != 0)){
+        if(u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0 && 
+           u.getIdrole().compareTo(ConstanteSocobis.CONTREMAITRE_RANG) != 0 &&
+           u.getIdrole().compareTo("cheffab") != 0 &&
+           u.getIdrole().compareTo(ConstanteSocobis.MAGCENTRAL_RANG) != 0){
             throw new Exception("Vous n’avez pas le droit de creer une charge");
         }
         return super.createObject(u,c);
@@ -126,9 +129,12 @@ public class Charge extends  ClassEtat{
 
     @Override
     public Object validerObject(MapUtilisateur u, Connection c) throws Exception {
-        // if((u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0)&&(u.getIdrole().compareTo(ConstanteSocobis.CONTREMAITRE_RANG) != 0)){
-        //     throw new Exception("Vous n’avez pas le droit de valider une charge");
-        // }
+        if(u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0 && 
+           u.getIdrole().compareTo(ConstanteSocobis.CONTREMAITRE_RANG) != 0 &&
+           u.getIdrole().compareTo("cheffab") != 0 &&
+           u.getIdrole().compareTo(ConstanteSocobis.MAGCENTRAL_RANG) != 0){
+            throw new Exception("Vous n’avez pas le droit de valider une charge");
+        }
         return super.validerObject(u, c);
     }
 

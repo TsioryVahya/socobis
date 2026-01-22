@@ -78,8 +78,7 @@ public class Fabrication extends Of {
     public void setNiveau(int niveau) {
         this.niveau = niveau;
     }
-
-    public String getEquipe() {
+      public String getEquipe() {
         return equipe;
     }
 
@@ -100,12 +99,10 @@ public class Fabrication extends Of {
         setLiaisonFille("idmere");
         setNomClasseFille("fabrication.FabricationFille");
     }
-
     public String[] getValMotCles() {
-        String[] motCles = { "id", "libelle", "remarque" };
+        String[] motCles={"id","libelle", "remarque"};
         return motCles;
     }
-
     public String getIdOffille() {
         return idOffille;
     }
@@ -136,7 +133,8 @@ public class Fabrication extends Of {
         this.setId(makePK(c));
     }
 
-    public String getNomClasseFille() {
+    public  String getNomClasseFille()
+    {
         return "fabrication.FabricationFille";
     }
 
@@ -145,7 +143,7 @@ public class Fabrication extends Of {
         return "idMere";
     }
 
-    public Of getOf(String nt, Connection c) throws Exception {
+    public Of getOf(String nt, Connection c) throws Exception{
         return null;
     }
 
@@ -172,30 +170,31 @@ public class Fabrication extends Of {
             }
         }
     }
-
-    public void annulerVisa(String u, Connection c) throws Exception {
+    public void annulerVisa(String u,Connection c) throws Exception {
         int ouvert = 0;
-        try {
-            if (c == null) {
-                c = new UtilDB().GetConn();
+        try{
+            if(c == null){
+                c=new UtilDB().GetConn();
                 c.setAutoCommit(false);
                 ouvert = 1;
             }
             RecetteFab fab = new RecetteFab();
             fab.setNomTable("AS_RECETTEFABRICATION");
-            fab.deleteToTable(" IDPRODUITS='" + this.getId() + "'", c);
-            super.annulerVisa(u, c);
-            if (c != null && ouvert == 1) {
+            fab.deleteToTable(" IDPRODUITS='"+this.getId()+"'",c);
+            super.annulerVisa(u,c);
+            if(c!=null && ouvert ==1){
                 c.commit();
             }
-        } catch (Exception e) {
-            if (c != null && ouvert == 1) {
+        }
+        catch(Exception e){
+            if(c!=null && ouvert ==1){
                 c.rollback();
             }
             e.printStackTrace();
             throw e;
-        } finally {
-            if (c != null && ouvert == 1) {
+        }
+        finally{
+            if(c!=null && ouvert ==1){
                 c.close();
             }
         }
@@ -206,53 +205,47 @@ public class Fabrication extends Of {
         super.controler(c);
         OfFilleCpl filles = new OfFilleCpl();
         filles.setNomTable("OfFilleResteLib");
-        /*
-         * FabricationFille [] ofFilleNew =
-         * (FabricationFille[])this.getFille(null,c,""); OfFilleCpl [] ofFille =
-         * (OfFilleCpl[]) CGenUtil.rechercher(filles,null,null, " and IDMERE = '"
-         * +getIdOf()+ "'");
-         * 
-         * if(ofFilleNew.length!=ofFille.length){ throw new
-         * EOFException("On ne peut pa ajouter ou supprimer une ingredient si c'est une ordre de fabrication"
-         * ); } for(int i=0;i<ofFille.length;i++){
-         * if(ofFille[i].getQteReste()<ofFilleNew[i].getQte() ||
-         * ofFilleNew[i].getQte()<=0){ throw new
-         * EOFException("On ne peut pas augmenter la qunatité de l'engredient si c'est une ordre de fabrication"
-         * ); } }
-         */
+        /*FabricationFille [] ofFilleNew  = (FabricationFille[])this.getFille(null,c,"");
+        OfFilleCpl [] ofFille = (OfFilleCpl[]) CGenUtil.rechercher(filles,null,null, " and IDMERE = '" +getIdOf()+ "'");
+        
+        if(ofFilleNew.length!=ofFille.length){
+            throw new EOFException("On ne peut pa ajouter ou supprimer une ingredient si c'est une ordre de fabrication");
+        }
+        for(int i=0;i<ofFille.length;i++){
+            if(ofFille[i].getQteReste()<ofFilleNew[i].getQte() || ofFilleNew[i].getQte()<=0){
+                throw new EOFException("On ne peut pas augmenter la qunatité de l'engredient si c'est une ordre de fabrication");
+            }
+        }*/
     }
+
 
     @Override
     public void controlerUpdate(Connection c) throws Exception {
-
+        
     }
-
-    public void modifPuFille(String user, Connection c) throws Exception {
-        FabricationFille[] fille = (FabricationFille[]) this.getFille("fabricationFillePU", c, "");
+    public void modifPuFille(String user,Connection c ) throws Exception {
+        FabricationFille[] fille=(FabricationFille[]) this.getFille("fabricationFillePU",c,"");
         this.setFille(fille);
         calculerRevient(c);
-        for (FabricationFille f : fille) {
+        for(FabricationFille f:fille)
+        {
             f.setNomTable("FabricationFille");
             f.setPu(f.getPuRevient());
-            f.updateToTableWithHisto(user, c);
+            f.updateToTableWithHisto(user,c);
         }
     }
-
-    public MvtStock[] getMvtStock(String nt, Connection c) throws Exception {
+    public MvtStock[] getMvtStock(String nt,Connection c) throws Exception {
         MvtStock stock = new MvtStock();
-        String nomTable = "MVTSTOCK";
-        if (nt != null && nt.compareToIgnoreCase("") != 0)
-            nomTable = nt;
+        String nomTable="MVTSTOCK";
+        if(nt!=null&&nt.compareToIgnoreCase("")!=0)nomTable=nt;
         stock.setNomTable(nomTable);
         stock.setIdobjet(this.getId());
         return (MvtStock[]) CGenUtil.rechercher(stock, null, null, c, " ");
     }
-
-    public MvtStockFille[] getMvtStockFille(String nt, Connection c) throws Exception {
+    public MvtStockFille[] getMvtStockFille(String nt,Connection c) throws Exception {
         MvtStockFille stock = new MvtStockFille();
-        String nomTable = "MvtStockFilleFab";
-        if (nt != null && nt.compareToIgnoreCase("") != 0)
-            nomTable = nt;
+        String nomTable="MvtStockFilleFab";
+        if(nt!=null&&nt.compareToIgnoreCase("")!=0)nomTable=nt;
         stock.setNomTable(nomTable);
         stock.setIdFab(this.getId());
         return (MvtStockFille[]) CGenUtil.rechercher(stock, null, null, c, " ");
@@ -267,11 +260,12 @@ public class Fabrication extends Of {
                 c = new UtilDB().GetConn();
                 c.setAutoCommit(false);
             }
-            // sortie
+            // sortie 
             // entree
 
-            this.modifPuFille(u, c);
-            this.decomposerInserer(u, c);
+
+            this.modifPuFille(u,c);
+            this.decomposerInserer(u,c);
             super.validerObject(u, c);
 
             c.commit();
@@ -290,63 +284,66 @@ public class Fabrication extends Of {
         }
     }
 
-    public void sortieStock() {
+    public void sortieStock(){
 
     }
 
-    public void entreeStock() {
-
+    public void entreeStock(){
+        
     }
 
-    public Recette[] decomposer(Connection c) throws Exception {
+    public Recette[] decomposer(Connection c)throws Exception
+    {
         Ingredients ing = new Ingredients();
         ing.setId(this.getId());
         return ing.decomposerBase("as_recetteFab", c);
     }
-
-    public List<RecetteLib> decomposerPremier(String nt, Connection c) throws Exception {
-        FabricationFille[] listeFille = (FabricationFille[]) this.getFille(null, c, "");
+    public List<RecetteLib> decomposerPremier(String nt,Connection c) throws Exception
+    {
+        FabricationFille[] listeFille=(FabricationFille[])this.getFille(null,c,"");
         Recette[][] lr = new Recette[listeFille.length][];
-        double[] listeRev = new double[listeFille.length];
+        double[] listeRev=new double[listeFille.length];
         List<RecetteLib> finale = new ArrayList();
-        for (int i = 0; i < listeFille.length; i++) {
+        for(int i=0;i<listeFille.length;i++)
+        {
             Ingredients ing = new Ingredients();
             ing.setId(listeFille[i].getIdIngredients());
-            listeFille[i].setListeRecette(ing.getRecetteavecPu(null, c));
-            for (RecetteLib rec : listeFille[i].getListeRecette()) {
-                rec.setQteav(rec.getQteav() / rec.getQuantite());
-                rec.setQuantite(rec.getQuantite() * listeFille[i].getQte());
+            listeFille[i].setListeRecette(ing.getRecetteavecPu(null,c));
+            for(RecetteLib rec:listeFille[i].getListeRecette())
+            {
+                rec.setQteav(rec.getQteav()/rec.getQuantite());
+                rec.setQuantite(rec.getQuantite()*listeFille[i].getQte());
             }
             finale.addAll(Arrays.asList(listeFille[i].getListeRecette()));
         }
         return finale;
 
     }
-
-    public void decomposerInserer(String u, Connection c) throws Exception {
+    public void decomposerInserer(String u,Connection c)throws Exception{
         Statement st = null;
         try {
-            // Recette[] lc = this.decomposer(c);
-            List<RecetteLib> listerc = this.decomposerPremier(u, c);
-            // if(lc!=null)lc[0].setIdproduits(this.getId());
+            //Recette[] lc = this.decomposer(c);
+            List<RecetteLib> listerc=this.decomposerPremier(u,c);
+            //if(lc!=null)lc[0].setIdproduits(this.getId());
             for (int i = 0; i < listerc.size(); i++) {
-                RecetteFab rf = new RecetteFab();
+                RecetteFab rf=new RecetteFab();
                 rf.setIdingredients(listerc.get(i).getIdingredients());
                 rf.setQteav(listerc.get(i).getQteav());
                 rf.setQuantite(listerc.get(i).getQuantite());
                 rf.setUnite(listerc.get(i).getUnite());
                 rf.setIdproduits(this.getId());
                 rf.setNomTable("as_recettefabrication");
-                // st = c.createStatement();
+                //st = c.createStatement();
                 rf.createObject(u, c);
             }
-            // st.executeBatch();
-        } catch (Exception e) {
+            //st.executeBatch();
+        }
+        catch (Exception e) {
             c.rollback();
             throw e;
-        } finally {
-            if (st != null)
-                st.close();
+        }
+        finally {
+            if(st!=null)st.close();
         }
     }
 
@@ -359,7 +356,7 @@ public class Fabrication extends Of {
                 c.setAutoCommit(false);
             }
             this.setMode("modif");
-            // Mettre controle si besoin
+            //Mettre controle si besoin
             this.setEtat(ConstanteProcess.entame);
             this.updateToTableWithHisto(u, c);
             return this;
@@ -375,7 +372,6 @@ public class Fabrication extends Of {
             }
         }
     }
-
     public Object bloquerObject(String u, Connection c) throws Exception {
         boolean estOuvert = false;
         try {
@@ -385,7 +381,7 @@ public class Fabrication extends Of {
                 c.setAutoCommit(false);
             }
             this.setMode("modif");
-            // Mettre controle si besoin
+            //Mettre controle si besoin
             this.setEtat(ConstanteProcess.bloque);
             this.updateToTableWithHisto(u, c);
             return this;
@@ -401,7 +397,6 @@ public class Fabrication extends Of {
             }
         }
     }
-
     public Object terminerObject(String u, Connection c) throws Exception {
         boolean estOuvert = false;
         try {
@@ -427,7 +422,7 @@ public class Fabrication extends Of {
         }
     }
 
-    public FabricationFilleCpl[] getFabricationFilleCpl(Connection c) throws Exception {
+    public FabricationFilleCpl[] getFabricationFilleCpl (Connection c) throws Exception {
         boolean estOuvert = false;
         try {
             if (c == null) {
@@ -450,10 +445,8 @@ public class Fabrication extends Of {
             }
         }
     }
-
-    public FabricationFille[] getFabricationFille(Connection c) throws Exception {
-        if (getFille() != null)
-            return (FabricationFille[]) getFille();
+     public FabricationFille[] getFabricationFille (Connection c) throws Exception {
+        if(getFille()!=null)return (FabricationFille[]) getFille();
         boolean estOuvert = false;
         try {
             if (c == null) {
@@ -475,18 +468,17 @@ public class Fabrication extends Of {
             }
         }
     }
-
-    protected MvtStock createMvtStock(String action, String u, Connection c) throws Exception {
-        MvtStock md = new MvtStock();
+    protected MvtStock createMvtStock(String action,String u,Connection c) throws Exception{
+        MvtStock md=new MvtStock();
         md.setDaty(this.getDaty());
         md.setIdMagasin(this.getCible());
         md.setIdPoint(this.getCible());
-        if (action.compareToIgnoreCase("entree") == 0) {
-            md.setDesignation("Entree de stock relatif : fabrication de : " + this.getId());
+        if (action.compareToIgnoreCase("entree")==0) {   
+            md.setDesignation("Entree de stock relatif : fabrication de : "+ this.getId());
             md.setIdTypeMvStock(ConstanteStation.TYPEMVTSTOCKENTREE);
         }
-        if (action.compareToIgnoreCase("sortie") == 0) {
-            md.setDesignation("Sortie de stock relatif : fabrication de : " + this.getId());
+         if (action.compareToIgnoreCase("sortie")==0) {
+            md.setDesignation("Sortie de stock relatif : fabrication de : "+ this.getId());
             md.setIdTypeMvStock(ConstanteStation.TYPEMVTSTOCKSORTIE);
         }
         md.setIdobjet(this.id);
@@ -494,50 +486,47 @@ public class Fabrication extends Of {
         md.validerObject(u, c);
         return md;
     }
-
-    protected MvtStockFille[] createMvtSockFilleSortie(String u, MvtStock mere, Connection c) throws Exception {
-        FabricationFille[] listeFille = this.getFabricationFille(c);
-
-        for (FabricationFille fille : listeFille) {
+    protected MvtStockFille[] createMvtSockFilleSortie(String u,MvtStock mere,Connection c) throws Exception{
+        FabricationFille[] listeFille=this.getFabricationFille(c);
+        
+        for(FabricationFille fille:listeFille){
             MvtStockFille[] m = fille.createMvtSockFilleSortie(c);
             for (int i = 0; i < m.length; i++) {
-                // m[i] = new MvtStockFille();
+                //m[i] = new MvtStockFille();
                 m[i].setIdMvtStock(mere.getId());
-                m[i].createObject(u, c);
+                m[i].createObject(u,c);
             }
         }
         return null;
     }
 
-    protected MvtStockFille[] createMvtSockFilleEntree(MvtStock mere, Connection c) throws Exception {
+    protected MvtStockFille[] createMvtSockFilleEntree(MvtStock mere,Connection c) throws Exception{
         FabricationFille[] ff = this.getFabricationFille(c);
         MvtStockFille[] m = new MvtStockFille[ff.length];
         for (int i = 0; i < ff.length; i++) {
-            m[i] = new MvtStockFille();
-            m[i].setIdMvtStock(mere.getId());
-            m[i].setIdProduit(ff[i].getIdIngredients());
-            m[i].setEntree(ff[i].getQte());
-            m[i].setPu(ff[i].getPu());
+           m[i] = new MvtStockFille();
+           m[i].setIdMvtStock(mere.getId());
+           m[i].setIdProduit(ff[i].getIdIngredients());
+           m[i].setEntree(ff[i].getQte());
+           m[i].setPu(ff[i].getPu());
         }
         return m;
     }
-
-    protected void createSortieStock(String u, Connection c) throws Exception {
-        MvtStock m = this.createMvtStock("sortie", u, c);
-        this.createMvtSockFilleSortie(u, m, c);
+    protected void createSortieStock(String u,Connection c) throws Exception{
+        MvtStock m=this.createMvtStock("sortie", u ,c);
+        this.createMvtSockFilleSortie(u,m, c);
     }
-
-    protected void createEntreeStock(String u, Connection c) throws Exception {
-        MvtStock m = this.createMvtStock("entree", u, c);
+    protected void createEntreeStock(String u,Connection c) throws Exception{
+        MvtStock m=this.createMvtStock("entree", u, c);
         MvtStockFille[] filles = this.createMvtSockFilleEntree(m, c);
-        for (int i = 0; i < filles.length; i++) {
+        for(int i=0;i<filles.length;i++){
             filles[i].createObject(u, c);
-        }
+        } 
     }
-
-    protected Of genererOf() {
+    
+    protected Of genererOf(){
         Of of = null;
-
+        
         try {
             of = new Of();
             of.setLancePar(lancePar);
@@ -547,19 +536,19 @@ public class Fabrication extends Of {
             of.setIdBc(idBc);
             of.setBesoin(besoin);
             of.setDaty(daty);
-
+            
             FabricationFille[] fabFilles = getFabricationFille(null);
-            OfFille[] ofFilles = new OfFille[fabFilles.length];
+            OfFille[] ofFilles =  new OfFille[fabFilles.length];
             for (int i = 0; i < ofFilles.length; i++) {
                 ofFilles[i] = fabFilles[i].genererOfFille();
             }
             of.setOfFilles(ofFilles);
         } catch (Exception e) {
         }
-
+        
         return of;
     }
-
+    
     public MvtStock genererMvtStock(String typemvtstock, Connection c) throws Exception {
         String id = this.getId();
         try {
@@ -567,39 +556,37 @@ public class Fabrication extends Of {
             Fabrication enbase = (Fabrication) this.getById(id, this.getNomTable(), c);
             FabricationFilleCpl[] details = enbase.getFabricationFilleCpl(c);
             enbase.setFille(details);
-            if (details.length == 0) {
-                return null;
-            }
+            if(details.length==0){return null;}
             MvtStock mvt = new MvtStock();
             mvt.setDesignation("Mouvement de stock de l'ordre de fabrication : " + this.getId());
             mvt.setIdobjet(this.getId());
             mvt.setIdTypeMvStock(typemvtstock);
             mvt.setIdMagasin(enbase.getCible());
-            if (typemvtstock.equalsIgnoreCase(ConstanteStation.TYPEMVTSTOCKENTREE)) {
+            if(typemvtstock.equalsIgnoreCase(ConstanteStation.TYPEMVTSTOCKENTREE))
+            {
                 MvtStockFille[] mvtstockdetails = new MvtStockFille[details.length];
-                for (int i = 0; i < details.length; i++) {
+                for (int i = 0; i < details.length; i++)
+                {
                     mvtstockdetails[i] = new MvtStockFille();
                     details[i].setLibIngredients(details[i].getIdingredientsLib());
                     mvtstockdetails[i] = details[i].genererMvtStockFille(typemvtstock);
                 }
                 mvt.setFille(mvtstockdetails);
-            } else {
-                Recette crt = new Recette();
+            }
+            else {
+                Recette crt=new Recette();
                 crt.setNomTable("as_recetteFabLibSt");
                 crt.setIdproduits(this.getId());
-                Recette[] recettes = (Recette[]) CGenUtil.rechercher(crt, null, null, c, "");
-                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: "
-                        + recettes.length + " ingrédients.");
+                Recette[] recettes = (Recette[])CGenUtil.rechercher(crt,null,null,c,"");
+                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: " + recettes.length + " ingrédients.");
                 FabricationFilleCpl[] detailsNouveau = new FabricationFilleCpl[recettes.length];
                 List<MvtStockFille> mvtDetails = new ArrayList<MvtStockFille>();
 
                 MvtStockEntreeAvecReste cibleCtr = new MvtStockEntreeAvecReste();
                 cibleCtr.setNomTable("V_ETATSTOCK_ENTREE");
                 cibleCtr.setIdMagasin(enbase.getCible());
-                MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[]) CGenUtil.rechercher(cibleCtr, null,
-                        null, c, "order by daty desc");
-                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: "
-                        + etatStock.length + " lignes.");
+                MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[])CGenUtil.rechercher(cibleCtr, null, null, c, "order by daty desc");
+                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: " + etatStock.length + " lignes.");
 
                 Vector<MvtStockEntreeAvecReste> vect = new Vector<MvtStockEntreeAvecReste>(Arrays.asList(etatStock));
 
@@ -607,18 +594,14 @@ public class Fabrication extends Of {
                     detailsNouveau[i] = new FabricationFilleCpl();
                     detailsNouveau[i].setIdIngredients(recettes[i].getIdingredients());
                     detailsNouveau[i].setLibIngredients(recettes[i].getLibIngredients());
-                    if (recettes[i].getReste() > 0)
-                        detailsNouveau[i].setQte(recettes[i].getReste());
+                    if(recettes[i].getReste()>0)detailsNouveau[i].setQte(recettes[i].getReste());
                     detailsNouveau[i].setPu(recettes[i].getQteav());
-                    if (recettes[i].getTypeStock() != null && recettes[i].getTypeStock().compareToIgnoreCase("") != 0
-                            && detailsNouveau[i].getQte() > 0) {
+                    if (recettes[i].getTypeStock() != null && recettes[i].getTypeStock().compareToIgnoreCase("") != 0&&detailsNouveau[i].getQte()>0) {
                         MvtStockFille mvtFille = new MvtStockFille();
                         double qteASortir = detailsNouveau[i].getQte();
-                        while (qteASortir > 0) {
-                            MvtStockEntreeAvecReste stock = (MvtStockEntreeAvecReste) AdminGen.findUnique(vect,
-                                    new String[] { "idProduit" },
-                                    new String[] { detailsNouveau[i].getIdIngredients() });
-                            if (stock != null && stock.getReste() > 0) {
+                        while(qteASortir > 0){
+                            MvtStockEntreeAvecReste stock = (MvtStockEntreeAvecReste) AdminGen.findUnique(vect,new String[]{"idProduit"},new String[]{detailsNouveau[i].getIdIngredients()});
+                            if(stock != null && stock.getReste() > 0 ){
                                 double qteTransferee = qteASortir;
                                 qteTransferee = Math.min(qteASortir, stock.getReste());
                                 stock.setReste(stock.getReste() - qteTransferee);
@@ -629,12 +612,13 @@ public class Fabrication extends Of {
                                 mvtFille.setPu(stock.getPu());
                                 mvtDetails.add(mvtFille);
                                 vect.remove(stock);
-                            } else {
+                            }else {
                                 detailsNouveau[i].setQte(qteASortir);
                                 mvtFille = detailsNouveau[i].genererMvtStockFille(typemvtstock);
                                 mvtDetails.add(mvtFille);
                                 break;
                             }
+
 
                         }
                     }
@@ -646,7 +630,7 @@ public class Fabrication extends Of {
             return mvt;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new Exception("Mouvement stock non generer " + e.getMessage());
+            throw new Exception("Mouvement stock non generer "+e.getMessage());
         } finally {
             if (c != null) {
                 c.close();
@@ -656,48 +640,46 @@ public class Fabrication extends Of {
 
     public MvtStock genererMvtStock(String cible, String typemvtstock, Connection c) throws Exception {
         String id = this.getId();
-        boolean estOuvert = false;
+        boolean estOuvert=false;
         try {
-            if (c == null) {
+            if(c==null) {
                 c = new UtilDB().GetConn();
-                estOuvert = true;
+                estOuvert=true;
             }
             Fabrication enbase = (Fabrication) this.getById(id, this.getNomTable(), c);
             FabricationFilleCpl[] details = enbase.getFabricationFilleCpl(c);
             enbase.setFille(details);
-            if (details.length == 0) {
-                return null;
-            }
+            if(details.length==0){return null;}
             MvtStock mvt = new MvtStock();
             mvt.setDesignation("Mouvement de stock de l'ordre de fabrication : " + this.getId());
             mvt.setIdobjet(this.getId());
             mvt.setIdTypeMvStock(typemvtstock);
-            mvt.setIdMagasin(cible != null ? cible : enbase.getCible());
-            if (typemvtstock.equalsIgnoreCase(ConstanteStation.TYPEMVTSTOCKENTREE)) {
+            mvt.setIdMagasin(cible!=null ?cible : enbase.getCible());
+            if(typemvtstock.equalsIgnoreCase(ConstanteStation.TYPEMVTSTOCKENTREE))
+            {
                 MvtStockFille[] mvtstockdetails = new MvtStockFille[details.length];
-                for (int i = 0; i < details.length; i++) {
+                for (int i = 0; i < details.length; i++)
+                {
                     mvtstockdetails[i] = new MvtStockFille();
                     details[i].setLibIngredients(details[i].getIdingredientsLib());
                     mvtstockdetails[i] = details[i].genererMvtStockFille(typemvtstock);
                 }
                 mvt.setFille(mvtstockdetails);
-            } else {
-                Recette crt = new Recette();
+            }
+            else {
+                Recette crt=new Recette();
                 crt.setNomTable("as_recetteFabLibSt");
                 crt.setIdproduits(this.getId());
-                Recette[] recettes = (Recette[]) CGenUtil.rechercher(crt, null, null, c, "");
-                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: "
-                        + recettes.length + " ingrédients.");
+                Recette[] recettes = (Recette[])CGenUtil.rechercher(crt,null,null,c,"");
+                System.out.println("DEBUG MVT SORTIE: Fabrication " + this.getId() + ", Recette trouvée: " + recettes.length + " ingrédients.");
                 FabricationFilleCpl[] detailsNouveau = new FabricationFilleCpl[recettes.length];
                 List<MvtStockFille> mvtDetails = new ArrayList<MvtStockFille>();
 
                 MvtStockEntreeAvecReste cibleCtr = new MvtStockEntreeAvecReste();
                 cibleCtr.setNomTable("V_ETATSTOCK_ENTREE");
                 cibleCtr.setIdMagasin(enbase.getCible());
-                MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[]) CGenUtil.rechercher(cibleCtr, null,
-                        null, c, "order by daty desc");
-                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: "
-                        + etatStock.length + " lignes.");
+                MvtStockEntreeAvecReste[] etatStock = (MvtStockEntreeAvecReste[])CGenUtil.rechercher(cibleCtr, null, null, c, "order by daty desc");
+                System.out.println("DEBUG MVT SORTIE: Magasin " + enbase.getCible() + ", Etat du stock trouvé: " + etatStock.length + " lignes.");
 
                 Vector<MvtStockEntreeAvecReste> vect = new Vector<MvtStockEntreeAvecReste>(Arrays.asList(etatStock));
 
@@ -705,18 +687,14 @@ public class Fabrication extends Of {
                     detailsNouveau[i] = new FabricationFilleCpl();
                     detailsNouveau[i].setIdIngredients(recettes[i].getIdingredients());
                     detailsNouveau[i].setLibIngredients(recettes[i].getLibIngredients());
-                    if (recettes[i].getReste() > 0)
-                        detailsNouveau[i].setQte(recettes[i].getReste());
+                    if(recettes[i].getReste()>0)detailsNouveau[i].setQte(recettes[i].getReste());
                     detailsNouveau[i].setPu(recettes[i].getQteav());
-                    if (recettes[i].getTypeStock() != null && recettes[i].getTypeStock().compareToIgnoreCase("") != 0
-                            && detailsNouveau[i].getQte() > 0) {
+                    if (recettes[i].getTypeStock() != null && recettes[i].getTypeStock().compareToIgnoreCase("") != 0&&detailsNouveau[i].getQte()>0) {
                         MvtStockFille mvtFille = new MvtStockFille();
                         double qteASortir = detailsNouveau[i].getQte();
-                        while (qteASortir > 0) {
-                            MvtStockEntreeAvecReste stock = (MvtStockEntreeAvecReste) AdminGen.findUnique(vect,
-                                    new String[] { "idProduit" },
-                                    new String[] { detailsNouveau[i].getIdIngredients() });
-                            if (stock != null && stock.getReste() > 0) {
+                        while(qteASortir > 0){
+                            MvtStockEntreeAvecReste stock = (MvtStockEntreeAvecReste) AdminGen.findUnique(vect,new String[]{"idProduit"},new String[]{detailsNouveau[i].getIdIngredients()});
+                            if(stock != null && stock.getReste() > 0 ){
                                 double qteTransferee = qteASortir;
                                 qteTransferee = Math.min(qteASortir, stock.getReste());
                                 stock.setReste(stock.getReste() - qteTransferee);
@@ -727,12 +705,13 @@ public class Fabrication extends Of {
                                 mvtFille.setPu(stock.getPu());
                                 mvtDetails.add(mvtFille);
                                 vect.remove(stock);
-                            } else {
+                            }else {
                                 detailsNouveau[i].setQte(qteASortir);
                                 mvtFille = detailsNouveau[i].genererMvtStockFille(typemvtstock);
                                 mvtDetails.add(mvtFille);
                                 break;
                             }
+
 
                         }
                     }
@@ -744,30 +723,30 @@ public class Fabrication extends Of {
             return mvt;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new Exception("Mouvement stock non generer " + e.getMessage());
+            throw new Exception("Mouvement stock non generer "+e.getMessage());
         } finally {
-            if (c != null && estOuvert == true) {
+            if (c != null&&estOuvert==true) {
                 c.close();
             }
         }
     }
 
     public FabricationFille[] genererFabricationFilleSuivante(Connection c) throws Exception {
-        boolean estOuvert = false;
-        try {
-            if (c == null) {
-                c = new UtilDB().GetConn();
-                estOuvert = true;
+        boolean estOuvert=false;
+        try{
+            if(c==null){
+                c=new UtilDB().GetConn();
+                estOuvert=true;
             }
-            // Maka an le fabrication fille miaraka am niveau
+            //Maka an le fabrication fille miaraka am niveau
             //
-        } catch (Exception e) {
+        }
+        catch(Exception e){
             c.rollback();
             throw e;
-        } finally {
-            if (estOuvert && c != null) {
-                c.close();
-            }
+        }
+        finally {
+            if(estOuvert&&c!=null){c.close();}
         }
         return null;
     }
@@ -779,16 +758,14 @@ public class Fabrication extends Of {
             Fabrication enbase = (Fabrication) this.getById(id, this.getNomTable(), c);
             FabricationFilleCpl[] details = enbase.getFabricationFilleCpl(c);
             enbase.setFille(details);
-            if (details.length == 0) {
-                return null;
-            }
+            if(details.length==0){return null;}
             MvtStock mvt = new MvtStock();
             mvt.setDesignation("Mouvement de stock de l'ordre de fabrication : " + this.getId());
             mvt.setIdobjet(this.getId());
-            Recette crt = new Recette();
+            Recette crt=new Recette();
             crt.setNomTable("as_recetteFabLibSt");
             crt.setIdproduits(this.getId());
-            Recette[] recettes = (Recette[]) CGenUtil.rechercher(crt, null, null, c, "");
+            Recette[] recettes = (Recette[])CGenUtil.rechercher(crt,null,null,c,"");
             FabricationFilleCpl[] detailsNouveau = new FabricationFilleCpl[recettes.length];
             MvtStockFille[] mvtstockdetails = new MvtStockFille[recettes.length];
             for (int i = 0; i < recettes.length; i++) {
@@ -805,14 +782,13 @@ public class Fabrication extends Of {
             return mvt;
         } catch (Exception e) {
             e.printStackTrace();
-            throw new Exception("Mouvement stock non generer " + e.getMessage());
+            throw new Exception("Mouvement stock non generer "+e.getMessage());
         } finally {
             if (c != null) {
                 c.close();
             }
         }
     }
-
     @Override
     public ClassMAPTable createObject(String user, Connection connection) throws Exception {
         try {
@@ -828,16 +804,15 @@ public class Fabrication extends Of {
 
     /**
      * Crée un objet avec ses filles associées
-     * 
      * @throws Exception en cas d'erreur lors du traitement
      */
     private ClassMAPTable createObjectWithFilles(String user, Connection connection) throws Exception {
         try {
             FabricationFille[] originalFilles = (FabricationFille[]) this.getFille();
-            Fabrication[] fabrications = createFabricationsFromFilles(originalFilles, connection);
+            Fabrication[] fabrications = createFabricationsFromFilles(originalFilles,connection);
 
             // Fusion des fabrications par niveau
-            // Fabrication[] mergedFabrications = mergeFabrications(fabrications);
+            //Fabrication[] mergedFabrications = mergeFabrications(fabrications);
 
             // Persistance des fabrications et de leurs filles
             persistFabrications(fabrications, user, connection);
@@ -853,10 +828,9 @@ public class Fabrication extends Of {
 
     /**
      * Crée des fabrications à partir des filles
-     * 
      * @throws Exception en cas d'erreur lors de la duplication
      */
-    private Fabrication[] createFabricationsFromFilles(FabricationFille[] filles, Connection c) throws Exception {
+    private Fabrication[] createFabricationsFromFilles(FabricationFille[] filles,Connection c) throws Exception {
         try {
             Fabrication[] fabrications = new Fabrication[filles.length];
 
@@ -865,18 +839,20 @@ public class Fabrication extends Of {
 
                 // Dupliquer la fabrication de base
                 Fabrication fabrication = (Fabrication) this.dupliquerSansBase();
-                // fabrication.setIdFournisseur(originalFille.getOperateur());
+                //fabrication.setIdFournisseur(originalFille.getOperateur());
                 fabrication.setNiveau(originalFille.getNiveau());
                 fabrication.setLibelle(originalFille.getRemarque());
                 fabrication.construirePK(c);
-                if (i > 0) {
-                    fabrication.setFabricationPrec(fabrications[i - 1].getTuppleID());
-                    fabrications[i - 1].setFabricationSuiv(fabrication.getId());
+                if(i>0)
+                {
+                    fabrication.setFabricationPrec(fabrications[i-1].getTuppleID());
+                    fabrications[i-1].setFabricationSuiv(fabrication.getId());
                 }
+
 
                 // Dupliquer la fille et l'associer
                 FabricationFille cloneFille = (FabricationFille) originalFille.dupliquerSansBase();
-                fabrication.setFille(new FabricationFille[] { cloneFille });
+                fabrication.setFille(new FabricationFille[]{ cloneFille });
 
                 fabrications[i] = fabrication;
             }
@@ -889,7 +865,6 @@ public class Fabrication extends Of {
 
     /**
      * Fusionne les fabrications par identifiant de fournisseur
-     * 
      * @throws Exception en cas d'erreur lors de la fusion
      */
     private Fabrication[] mergeFabrications(Fabrication[] fabrications) throws Exception {
@@ -909,7 +884,6 @@ public class Fabrication extends Of {
 
     /**
      * Persiste les fabrications et leurs filles associées
-     * 
      * @throws Exception en cas d'erreur lors de la persistance
      */
     private void persistFabrications(Fabrication[] fabrications, String user, Connection connection) throws Exception {
@@ -929,7 +903,7 @@ public class Fabrication extends Of {
         }
     }
 
-    public RessourceParFabrication[] getRessourceFabrication(Connection c) throws Exception {
+    public RessourceParFabrication[] getRessourceFabrication(Connection c) throws Exception{
         String id = this.getId();
         boolean estOuvert = false;
         try {
@@ -938,10 +912,10 @@ public class Fabrication extends Of {
                 c = new UtilDB().GetConn();
                 c.setAutoCommit(false);
             }
-            RessourceParFabrication crt = new RessourceParFabrication();
+            RessourceParFabrication crt=new RessourceParFabrication();
             crt.setNomTable("ressourceParFabricationComplet");
             crt.setIdFabrication(id);
-            RessourceParFabrication[] rep = (RessourceParFabrication[]) CGenUtil.rechercher(crt, null, null, c, "");
+            RessourceParFabrication[] rep = (RessourceParFabrication[])CGenUtil.rechercher(crt,null,null,c,"");
             return rep;
         } catch (Exception e) {
             e.printStackTrace();
@@ -953,7 +927,7 @@ public class Fabrication extends Of {
         }
     }
 
-    public HeureSupFabricationCPL[] genererHeureSup(Connection c) throws Exception {
+    public HeureSupFabricationCPL[] genererHeureSup(Connection c)throws Exception{
         String id = this.getId();
         boolean estOuvert = false;
         try {
@@ -963,10 +937,10 @@ public class Fabrication extends Of {
                 c.setAutoCommit(false);
             }
             RessourceParFabrication[] crt = this.getRessourceFabrication(c);
-            HeureSupFabricationCPL[] rep = new HeureSupFabricationCPL[crt.length];
-            if (crt.length > 0) {
-                for (int i = 0; i < crt.length; i++) {
-                    rep[i] = new HeureSupFabricationCPL();
+            HeureSupFabricationCPL[] rep=new HeureSupFabricationCPL[crt.length];
+            if(crt.length>0){
+                for(int i=0;i<crt.length;i++){
+                    rep[i]=new HeureSupFabricationCPL();
                     rep[i].setIdRessParFab(crt[i].getId());
                     rep[i].setIdClasseDefaut(crt[i].getIdQualification());
                     rep[i].setIdClasseEffective(crt[i].getIdQualificationEffective());
@@ -985,32 +959,32 @@ public class Fabrication extends Of {
         }
     }
 
+
     public RessourceParFabrication[] genererAttribution(Connection c) throws Exception {
         boolean estOuvert = false;
         try {
-            if (c == null) {
+            if(c==null){
                 estOuvert = true;
                 c = new UtilDB().GetConn();
             }
             Fabrication fabrication = new Fabrication();
             fabrication.setId(this.getId());
             fabrication = (Fabrication) fabrication.getMereFille("fabrication", "fabricationfille", c);
-            if (fabrication == null) {
+            if(fabrication == null){
                 throw new Exception("Fabrication non trouvée pour l'ID: " + this.getId());
             }
 
             FabricationFille[] fille = (FabricationFille[]) fabrication.getFille();
-            if (fille == null || fille.length == 0) {
+            if(fille == null || fille.length == 0){
                 throw new Exception("Aucune fabrication fille trouvée pour l'ID: " + this.getId());
             }
 
             Ingredients p = new Ingredients();
             p.setId(fille[0].getIdIngredients());
-            Recette[] recettesMO = p.decomposerParNiveau("AS_RECETTECOMPOSE", c,
-                    String.format(" and ing.idcategorie = '%s'", ConstanteSocobis.CATEGORIE_MAINDOEUVRE));
+            Recette[] recettesMO =  p.decomposerParNiveau("AS_RECETTECOMPOSE",c,String.format(" and ing.idcategorie = '%s'", ConstanteSocobis.CATEGORIE_MAINDOEUVRE));
 
             RessourceParFabrication[] resFab = new RessourceParFabrication[recettesMO.length];
-            for (int i = 0; i < recettesMO.length; i++) {
+            for(int i=0; i<recettesMO.length; i++){
                 resFab[i] = new RessourceParFabrication();
                 resFab[i].setIdFabrication(this.getId());
                 resFab[i].setIdPoste(recettesMO[i].getRefpost());
@@ -1019,14 +993,14 @@ public class Fabrication extends Of {
                 Poste pcrt = new Poste();
                 pcrt.setId(recettesMO[i].getRefpost());
                 Poste[] postes = (Poste[]) CGenUtil.rechercher(pcrt, null, null, c, " ");
-                if (postes.length > 0) {
-                    remarque += "Poste: " + postes[0].getVal();
+                if(postes.length>0){
+                    remarque += "Poste: "+postes[0].getVal();
                 }
                 QualificationPaie qcrt = new QualificationPaie();
                 qcrt.setId(recettesMO[i].getRefqualification());
                 QualificationPaie[] qualif = (QualificationPaie[]) CGenUtil.rechercher(qcrt, null, null, c, " ");
-                if (qualif.length > 0) {
-                    remarque += " / Qualification: " + qualif[0].getVal();
+                if(qualif.length>0){
+                    remarque += " / Qualification: "+qualif[0].getVal();
                 }
                 resFab[i].setRemarque(remarque);
 
@@ -1036,19 +1010,18 @@ public class Fabrication extends Of {
         } catch (Exception e) {
             e.printStackTrace();
             throw new Exception(e.getMessage());
-        } finally {
-            if (estOuvert && c != null) {
+        }finally {
+            if(estOuvert && c!=null){
                 c.close();
             }
         }
     }
-
     @Override
-    public ClassMAPTable createObject(MapUtilisateur u, Connection c) throws Exception {
-        if ((u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0)) {
+    public ClassMAPTable createObject(MapUtilisateur u, Connection c)throws Exception{
+        if(u.getIdrole().compareTo(ConstanteSocobis.CHEFFABR_RANG) != 0 && u.getIdrole().compareTo("cheffab") != 0){
             throw new Exception("Vous n’avez pas le droit de creer une fabrication");
         }
-        return super.createObject(u, c);
+        return super.createObject(u,c);
     }
 
     @Override
@@ -1062,7 +1035,7 @@ public class Fabrication extends Of {
         Fabrication fab = (Fabrication) this.getById(this.getId(), this.getNomTable(), c);
         HeureSupFabrication[] fille = null;
         try {
-            c = new UtilDB().GetConn();
+            c = new  UtilDB().GetConn();
             isOpen = true;
 
             EquipeEmpCpl equipe = new EquipeEmpCpl();
@@ -1070,15 +1043,15 @@ public class Fabrication extends Of {
             equipe.setIdEquipe(fab.getEquipe());
 
             EquipeEmpCpl[] list = (EquipeEmpCpl[]) CGenUtil.rechercher(equipe, null, null, c, "");
-            if (list != null && list.length > 0) {
+            if(list != null && list.length > 0) {
                 fille = new HeureSupFabrication[list.length];
-                for (int i = 0; i < list.length; i++) {
+                for(int i=0; i < list.length; i++) {
                     HeureSupFabrication hs = new HeureSupFabrication();
                     hs.setIdRessParFab(list[i].getIdEmploye());
                     fille[i] = hs;
                 }
 
-                // fab.setFille(fille);
+//                fab.setFille(fille);
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -1097,7 +1070,7 @@ public class Fabrication extends Of {
                 c = new UtilDB().GetConn();
                 estOuvert = true;
             }
-            Fabrication fab = new Fabrication();
+            Fabrication fab= new Fabrication();
             fab = (Fabrication) fab.getById(idFab, "FABRICATION", c);
             DemandeTransfert dm = new DemandeTransfert();
             dm.setNomTable("demandetransfert");
@@ -1107,15 +1080,14 @@ public class Fabrication extends Of {
             dm.setDesignation("Demande de transfert : " + fab.getId());
             Recette[] recettes = fab.decomposer(c);
             Vector<DemandeTransfertFille> vect = new Vector<DemandeTransfertFille>();
-            for (int i = 0; i < recettes.length; i++) {
-                if (idcat != null && !idcat.equalsIgnoreCase(recettes[i].getCategorieingredient())) {
-                    System.out.println("Recette " + recettes[i].getCategorieingredient()
-                            + " n'appartient pas à la catégorie " + idcat);
+            for(int i=0; i<recettes.length; i++){
+                if(idcat!=null && !idcat.equalsIgnoreCase(recettes[i].getCategorieingredient())){
+                    System.out.println("Recette "+recettes[i].getCategorieingredient()+" n'appartient pas à la catégorie "+idcat);
                     continue;
                 }
                 DemandeTransfertFille data = new DemandeTransfertFille();
                 data.setIdProduit(recettes[i].getIdingredients());
-                data.setRemarque(recettes[i].getLibIngredients() + " " + recettes[i].getUnite());
+                data.setRemarque(recettes[i].getLibIngredients()+" "+recettes[i].getUnite());
                 data.setQuantite(recettes[i].getQuantite());
                 vect.add(data);
             }
@@ -1124,8 +1096,7 @@ public class Fabrication extends Of {
         } catch (Exception e) {
             throw e;
         } finally {
-            if (estOuvert == true && c != null)
-                c.close();
+            if(estOuvert==true&&c!=null)c.close();
         }
     }
 }
