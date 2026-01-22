@@ -13,7 +13,7 @@ public class DureeCycleFab extends ClassMAPTable {
     public String getIdmere() {
         return idmere;
     }
-
+    
     public void setIdmere(String idmere) {
         this.idmere = idmere;
     }
